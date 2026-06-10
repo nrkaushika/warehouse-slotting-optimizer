@@ -302,6 +302,7 @@
         <div class="legend-item"><div class="legend-dot" style="background:var(--green-bar)"></div>Zone B — mid-velocity</div>
         <div class="legend-item"><div class="legend-dot" style="background:var(--amber-bar)"></div>Zone C — low-velocity</div>
         <div class="legend-item"><div class="legend-dot" style="background:var(--gray-bar)"></div>Zone D — bulk / slow-moving</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#BAE6FD"></div>❄ Cold storage — isolated, temperature-controlled (LG05)</div>
       </div>
       <table>
         <thead><tr><th>SKU</th><th>Daily picks</th><th>Weight (kg)</th><th>Velocity score</th><th>Zone</th><th>Bin ID</th><th>Rationale</th></tr></thead>
@@ -324,11 +325,13 @@
       </div>
       <div class="dispatch-label">↑ DISPATCH / PICK PATH ENTRY</div>
       <div class="warehouse-grid" id="warehouse-grid"></div>
+      <div id="cold-storage-section"></div>
       <div class="insight">
         Bins closest to the <strong>dispatch/pick path entry (top)</strong> are Zone A.
         Zone A slots = shortest picker travel = fastest order fulfillment.
-        In SAP EWM, this is configured via <strong>storage type search sequences</strong> in putaway strategy —
-        Zone A storage type has highest priority and gets checked first.
+        <strong>Cold chain items (❄) are routed to a dedicated temperature-controlled section (LG05)</strong> —
+        they never compete with ambient SKUs for Zone A/B/C/D bins.
+        In SAP EWM, this is enforced via storage type restrictions on the material master.
       </div>
     </div>
   </div>
@@ -353,8 +356,8 @@
           <tr><td>Zone A / B / C / D</td><td>Storage sections / storage types</td><td>LX01, SPRO warehouse structure</td></tr>
           <tr><td>Velocity score ranking</td><td>Storage type search sequence (putaway)</td><td>SPRO → EWM → Goods Receipt</td></tr>
           <tr><td>Weight penalty</td><td>Weight capacity check on storage bin</td><td>Warehouse bin master data</td></tr>
-          <tr><td>Cold chain flag</td><td>Storage type temperature conditions</td><td>Storage type master — temperature zone</td></tr>
-          <tr><td>Bin ID (e.g. A-01)</td><td>Storage bin (warehouse no. / section / bin)</td><td>LS01N, LX04</td></tr>
+          <tr><td><strong>❄ Cold chain → isolated section</strong></td><td><strong>Temperature-controlled storage type (LG05) — assigned in material master, never shares search sequence with ambient LG01–LG04</strong></td><td>Material master → Warehouse mgmt → Storage type indicator</td></tr>
+          <tr><td>Bin ID (e.g. A-01, CC-01)</td><td>Storage bin (warehouse no. / section / bin)</td><td>LS01N, LX04</td></tr>
           <tr><td>Reassigning zones</td><td>Rearrangement / reslotting transfer order</td><td>LT0A, LT10</td></tr>
         </tbody>
       </table>
@@ -421,11 +424,16 @@ function removeSKU(i) { skus.splice(i, 1); renderSKUTable(); }
 function velocityScore(sku) {
   const sizeW   = { S: 1.0, M: 0.85, L: 0.65 };
   const weightW = sku.weight <= 0.5 ? 1.0 : sku.weight <= 1.5 ? 0.85 : 0.65;
-  const coldW   = sku.cat === 'cold' ? 1.1 : 1.0;
-  return Math.round(sku.picks * sizeW[sku.size] * weightW * coldW);
+  // Cold chain items are scored independently within their own storage type —
+  // they do NOT compete with ambient SKUs for Zone A/B/C/D.
+  // This mirrors SAP EWM: cold storage type (LG05) has its own search sequence,
+  // completely separate from ambient storage types (LG01–LG04).
+  return Math.round(sku.picks * sizeW[sku.size] * weightW);
 }
 
-function assignZone(score, maxScore) {
+function assignZone(score, maxScore, isCold) {
+  // Cold chain items always go to Cold Storage — never ambient zones
+  if (isCold) return 'COLD';
   const p = score / maxScore;
   if (p >= 0.60) return 'A';
   if (p >= 0.35) return 'B';
@@ -433,36 +441,58 @@ function assignZone(score, maxScore) {
   return 'D';
 }
 
+function coldSubZone(score, maxColdScore) {
+  // Within cold storage, items are still ranked by velocity
+  const p = score / maxColdScore;
+  if (p >= 0.60) return 'Cold-1 (front)';
+  if (p >= 0.35) return 'Cold-2 (mid)';
+  return 'Cold-3 (rear)';
+}
+
 function zoneRationale(sku, zone) {
   const r = [];
-  if (zone === 'A') r.push('High-velocity → golden zone, minimal travel');
-  if (zone === 'B') r.push('Mid-velocity → secondary pick aisle');
-  if (zone === 'C') r.push('Low-velocity → outer storage area');
-  if (zone === 'D') r.push('Bulk / slow-moving → deep storage');
+  if (zone === 'COLD') r.push('Cold chain → dedicated temperature-controlled storage type (LG05) — never competes with ambient zones');
+  else if (zone === 'A') r.push('High-velocity → golden zone, minimal travel');
+  else if (zone === 'B') r.push('Mid-velocity → secondary pick aisle');
+  else if (zone === 'C') r.push('Low-velocity → outer storage area');
+  else if (zone === 'D') r.push('Bulk / slow-moving → deep storage');
   if (sku.weight > 1.5) r.push('heavy → waist-height bin recommended');
-  if (sku.cat === 'cold') r.push('cold chain → temperature-controlled section');
   if (sku.size === 'L') r.push('large → floor-level slot preferred');
   return r.join('; ');
 }
 
 function runOptimizer() {
   if (skus.length === 0) return alert('Add at least one SKU first.');
-  const scored  = skus.map(s => ({ ...s, score: velocityScore(s) }));
-  const maxScore = Math.max(...scored.map(s => s.score));
-  results = scored
-    .map((s, i) => {
-      const zone = assignZone(s.score, maxScore);
-      return { ...s, zone, bin: zone + '-' + String(i + 1).padStart(2, '0'), rationale: zoneRationale(s, zone) };
-    })
-    .sort((a, b) => b.score - a.score);
+  const scored = skus.map(s => ({ ...s, score: velocityScore(s) }));
 
-  const zA        = results.filter(r => r.zone === 'A').length;
+  // Separate cold chain from ambient — two independent pools
+  const ambientSKUs = scored.filter(s => s.cat !== 'cold');
+  const coldSKUs    = scored.filter(s => s.cat === 'cold');
+
+  const maxAmbient = ambientSKUs.length > 0 ? Math.max(...ambientSKUs.map(s => s.score)) : 1;
+  const maxCold    = coldSKUs.length    > 0 ? Math.max(...coldSKUs.map(s => s.score))    : 1;
+
+  const ambientResults = ambientSKUs.map((s, i) => {
+    const zone = assignZone(s.score, maxAmbient, false);
+    return { ...s, zone, bin: zone + '-' + String(i + 1).padStart(2, '0'), rationale: zoneRationale(s, zone), subZone: null };
+  });
+
+  const coldResults = coldSKUs.map((s, i) => {
+    const zone = 'COLD';
+    const sub  = coldSubZone(s.score, maxCold);
+    return { ...s, zone, bin: 'CC-' + String(i + 1).padStart(2, '0'), rationale: zoneRationale(s, zone), subZone: sub };
+  });
+
+  results = [...ambientResults, ...coldResults].sort((a, b) => b.score - a.score);
+
+  const zA         = results.filter(r => r.zone === 'A').length;
+  const zCold      = results.filter(r => r.zone === 'COLD').length;
   const totalPicks = results.reduce((s, r) => s + r.picks, 0);
-  const aPickPct  = Math.round(results.filter(r => r.zone === 'A').reduce((s, r) => s + r.picks, 0) / totalPicks * 100);
+  const aPickPct   = Math.round(results.filter(r => r.zone === 'A').reduce((s, r) => s + r.picks, 0) / totalPicks * 100);
   const travelGain = Math.round(30 + aPickPct * 0.3);
 
   document.getElementById('m-skus').textContent   = results.length;
-  document.getElementById('m-zA').textContent      = zA;
+  document.getElementById('m-zA').textContent      = zA + (zCold > 0 ? ` + ${zCold} cold` : '');
   document.getElementById('m-travel').textContent  = '-' + travelGain + '%';
   document.getElementById('m-gain').textContent    = Math.round(travelGain * 0.6) + '%';
 
@@ -472,18 +502,22 @@ function runOptimizer() {
       <td>${r.picks}</td>
       <td>${r.weight}</td>
       <td>${r.score}</td>
-      <td><span class="zone-badge zone-${r.zone}">Zone ${r.zone}</span></td>
+      <td>${r.zone === 'COLD'
+        ? `<span class="zone-badge" style="background:#E0F2FE;color:#0C4A6E">❄ Cold Storage</span>`
+        : `<span class="zone-badge zone-${r.zone}">Zone ${r.zone}</span>`}
+        ${r.subZone ? `<br><span style="font-size:11px;color:var(--text3)">${r.subZone}</span>` : ''}
+      </td>
       <td class="mono">${r.bin}</td>
       <td style="font-size:12px;color:var(--text2)">${r.rationale}</td>
     </tr>`).join('');
 
-  const topA = results.filter(r => r.zone === 'A').map(r => r.name).slice(0, 3).join(', ');
+  const topA   = results.filter(r => r.zone === 'A').map(r => r.name).slice(0, 3).join(', ') || 'none';
+  const topCold = results.filter(r => r.zone === 'COLD').map(r => r.name).join(', ') || 'none';
   document.getElementById('insight-box').innerHTML =
-    `<strong>Optimization summary:</strong> Zone A contains ${zA} SKU${zA !== 1 ? 's' : ''} representing ${aPickPct}% of all daily picks.
-    Slotting these near the pick path entry reduces estimated picker travel by ${travelGain}%.
-    Top Zone A items: ${topA}.
-    In SAP EWM, these assignments correspond to storage type search sequences in the putaway strategy —
-    Zone A storage types carry the highest priority and are evaluated first during bin determination.`;
+    `<strong>Optimization summary:</strong> Zone A contains ${zA} ambient SKU${zA !== 1 ? 's' : ''} (${aPickPct}% of daily picks) slotted near the pick path. 
+    ${zCold > 0 ? `<strong>${zCold} cold chain SKU${zCold !== 1 ? 's' : ''} (${topCold}) routed to dedicated cold storage (LG05) — isolated from ambient zone competition.</strong> ` : ''}
+    Estimated picker travel reduction: ${travelGain}%. 
+    In SAP EWM, cold chain items are assigned to a temperature-controlled storage type in the material master — the putaway strategy evaluates LG05 exclusively for these SKUs, never LG01–LG04.`;
 
   renderWarehouseMap();
   renderAnalysis();
@@ -497,15 +531,33 @@ function renderWarehouseMap() {
     'A','B','B','C','C','D','D','D',
     'B','B','C','C','D','D','D','D'
   ];
-  const byZone = { A: [], B: [], C: [], D: [] };
+  const byZone = { A: [], B: [], C: [], D: [], COLD: [] };
   results.forEach(r => byZone[r.zone].push(r));
   const used = { A: 0, B: 0, C: 0, D: 0 };
-  document.getElementById('warehouse-grid').innerHTML = layout.map(zone => {
+
+  const ambientGrid = layout.map(zone => {
     const sku = byZone[zone][used[zone]];
     used[zone]++;
     if (sku) return `<div class="bin bin-${zone}" title="${sku.name} | ${sku.picks} picks/day">${sku.bin}</div>`;
     return `<div class="bin bin-empty">—</div>`;
   }).join('');
+
+  const coldBins = byZone['COLD'].length > 0
+    ? byZone['COLD'].map(sku =>
+        `<div class="bin" style="background:#BAE6FD;color:#0C4A6E;border-color:#7DD3FC" title="${sku.name} | ${sku.picks} picks/day">❄ ${sku.bin}</div>`
+      ).join('') +
+      Array(Math.max(0, 8 - byZone['COLD'].length)).fill(`<div class="bin bin-empty">❄ —</div>`).join('')
+    : '';
+
+  const coldSection = byZone['COLD'].length > 0
+    ? `<div style="margin-top:16px;font-size:11px;color:#0C4A6E;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">
+        ❄ Cold storage section — LG05 (temperature-controlled, isolated from ambient zones)
+       </div>
+       <div class="warehouse-grid">${coldBins}</div>`
+    : '';
+
+  document.getElementById('warehouse-grid').innerHTML = ambientGrid;
+  document.getElementById('cold-storage-section').innerHTML = coldSection;
 }
 
 function renderAnalysis() {
