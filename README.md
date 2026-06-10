@@ -23,9 +23,13 @@ The zone system maps directly to how SAP EWM structures putaway:
 - **EWM logic tab** — maps every optimizer concept to the corresponding SAP transaction
 ---
 ## Scoring formula
+velocity_score = daily_picks × size_weight × weight_penalty
 
-velocity_score = daily_picks × size_weight × weight_penalty × cold_chain_bonus
-size_weight: Small = 1.0 | Medium = 0.85 | Large = 0.65 weight_penalty: ≤0.5kg = 1.0 | ≤1.5kg = 0.85 | >1.5kg = 0.65 cold_chain_bonus: cold chain = 1.1 | standard = 1.0
+size_weight:    Small = 1.0 | Medium = 0.85 | Large = 0.65
+weight_penalty: ≤0.5kg = 1.0 | ≤1.5kg = 0.85 | >1.5kg = 0.65
+
+Cold chain items are scored independently within their own storage pool (LG05)
+and never compete with ambient SKUs for Zone A–D assignment.
 
 Zone cutoffs are relative to the highest-scoring SKU in the dataset, so the optimizer adapts to whatever product mix you feed it.
 ---
