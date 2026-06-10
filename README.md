@@ -1,5 +1,3 @@
-paste this?
-
 # Warehouse Slotting Optimizer
 An interactive supply chain tool that scores SKUs by pick velocity, weight, and cold chain requirements — then assigns them to optimal warehouse zones. Built to demonstrate applied SAP EWM knowledge.
 **[Live Demo →](https://nrkaushika.github.io/warehouse-slotting-optimizer)**
