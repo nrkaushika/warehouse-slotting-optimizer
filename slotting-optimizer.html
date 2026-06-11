@@ -1,369 +1,284 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Warehouse Slotting Optimizer | SAP EWM-Aligned</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Warehouse Slotting Optimizer — SAP EWM Portfolio</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0f1117;--bg2:#1a1d27;--bg3:#222638;--bg4:#2a2f45;
+      --text:#e8e9f0;--text2:#9496a8;--text3:#5c5f75;
+      --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+      --accent:#6366f1;--accent2:#818cf8;--accent3:rgba(99,102,241,.1);
+      --green:#22c55e;--green-fill:rgba(34,197,94,.1);--green-dim:#166534;
+      --amber:#f59e0b;--amber-fill:rgba(245,158,11,.1);
+      --blue:#60a5fa;--blue-fill:rgba(96,165,250,.1);
+      --cold:#2dd4bf;--cold-fill:rgba(45,212,191,.1);
+      --purple:#a78bfa;--purple-fill:rgba(167,139,250,.1);
+      --red:#ef4444;--red-fill:rgba(239,68,68,.1);
+      --r:8px;--rl:14px
+    }
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
-    :root {
-      --bg: #ffffff;
-      --bg2: #f5f4f0;
-      --bg3: #eeede9;
-      --text: #1a1a18;
-      --text2: #5f5e5a;
-      --text3: #888780;
-      --border: rgba(0,0,0,0.12);
-      --border2: rgba(0,0,0,0.22);
-      --blue-fill: #E6F1FB;
-      --blue-text: #0C447C;
-      --blue-bar: #B5D4F4;
-      --green-fill: #EAF3DE;
-      --green-text: #27500A;
-      --green-bar: #C0DD97;
-      --amber-fill: #FAEEDA;
-      --amber-text: #633806;
-      --amber-bar: #FAC775;
-      --gray-fill: #F1EFE8;
-      --gray-text: #444441;
-      --gray-bar: #D3D1C7;
-      --radius: 8px;
-      --radius-lg: 12px;
-    }
+    /* ── Nav ── */
+    nav{padding:14px 32px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(15,17,23,.92);backdrop-filter:blur(12px);z-index:100}
+    .nav-left{display:flex;align-items:center;gap:12px}
+    .nav-back{font-size:12px;color:var(--text3);text-decoration:none;display:flex;align-items:center;gap:4px;transition:color .15s}
+    .nav-back:hover{color:var(--text2)}
+    .nav-divider{width:1px;height:14px;background:var(--border2)}
+    .nav-title{font-size:14px;font-weight:600;color:var(--text)}
+    .nav-badge{font-size:10px;background:var(--accent3);color:var(--accent2);border:0.5px solid rgba(99,102,241,.25);border-radius:99px;padding:2px 8px;font-weight:500}
 
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #1e1e1c;
-        --bg2: #2a2a27;
-        --bg3: #323230;
-        --text: #e8e6de;
-        --text2: #9c9a92;
-        --text3: #6e6c66;
-        --border: rgba(255,255,255,0.1);
-        --border2: rgba(255,255,255,0.2);
-        --blue-fill: #0C447C;
-        --blue-text: #B5D4F4;
-        --blue-bar: #185FA5;
-        --green-fill: #27500A;
-        --green-text: #C0DD97;
-        --green-bar: #3B6D11;
-        --amber-fill: #633806;
-        --amber-text: #FAC775;
-        --amber-bar: #854F0B;
-        --gray-fill: #444441;
-        --gray-text: #D3D1C7;
-        --gray-bar: #5F5E5A;
-      }
-    }
+    /* ── Header ── */
+    .header{padding:36px 32px 28px;border-bottom:0.5px solid var(--border);background:var(--bg)}
+    .header-inner{max-width:1100px;margin:0 auto}
+    .header h1{font-size:26px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px}
+    .header h1 span{background:linear-gradient(135deg,var(--accent2),var(--cold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .header p{font-size:14px;color:var(--text2);line-height:1.6;max-width:600px;margin-bottom:14px}
+    .header-tags{display:flex;gap:7px;flex-wrap:wrap}
+    .htag{font-size:11px;font-weight:500;padding:3px 10px;border-radius:99px;border:0.5px solid var(--border2);color:var(--text2)}
+    .htag.accent{border-color:rgba(99,102,241,.35);color:var(--accent2);background:var(--accent3)}
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg3);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 24px 16px 48px;
-    }
+    /* ── Tabs ── */
+    .tab-bar{padding:0 32px;border-bottom:0.5px solid var(--border);background:var(--bg2)}
+    .tab-bar-inner{max-width:1100px;margin:0 auto;display:flex;gap:2px}
+    .tab{padding:12px 16px;font-size:13px;cursor:pointer;border:none;background:none;color:var(--text3);border-bottom:2px solid transparent;transition:color .15s;font-weight:500}
+    .tab:hover{color:var(--text2)}
+    .tab.active{color:var(--text);border-bottom-color:var(--accent)}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
 
-    .container { max-width: 960px; margin: 0 auto; }
+    /* ── Main layout ── */
+    .main{max-width:1100px;margin:0 auto;padding:28px 32px 60px}
 
-    header { margin-bottom: 28px; }
-    header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
-    header p { font-size: 14px; color: var(--text2); line-height: 1.6; }
-    .badge {
-      display: inline-block; font-size: 11px; font-weight: 500;
-      padding: 2px 10px; border-radius: 99px; margin-right: 6px; margin-top: 8px;
-      background: var(--blue-fill); color: var(--blue-text);
-    }
+    /* ── Cards ── */
+    .card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--rl);padding:22px 24px;margin-bottom:16px}
+    .card-title{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
 
-    .tab-row {
-      display: flex; gap: 2px; border-bottom: 0.5px solid var(--border2); margin-bottom: 20px;
-    }
-    .tab {
-      padding: 8px 16px; font-size: 13px; cursor: pointer;
-      border: none; background: none; color: var(--text2);
-      border-bottom: 2px solid transparent; transition: color 0.15s;
-    }
-    .tab.active { border-bottom-color: var(--text); color: var(--text); font-weight: 500; }
-    .tab:hover { color: var(--text); }
+    /* ── Metrics ── */
+    .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+    @media(max-width:700px){.metrics{grid-template-columns:repeat(2,1fr)}}
+    .metric{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--rl);padding:16px 18px;position:relative;overflow:hidden}
+    .metric::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+    .metric.green::before{background:var(--green)}
+    .metric.amber::before{background:var(--amber)}
+    .metric.red::before{background:var(--red)}
+    .metric-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+    .metric-val{font-size:26px;font-weight:700;letter-spacing:-.02em}
+    .metric.green .metric-val{color:var(--green)}
+    .metric.amber .metric-val{color:var(--amber)}
+    .metric.red   .metric-val{color:var(--red)}
+    .metric-sub{font-size:11px;color:var(--text3);margin-top:3px}
 
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
+    /* ── Input area ── */
+    .input-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:14px}
+    @media(max-width:800px){.input-grid{grid-template-columns:1fr 1fr}}
+    label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px;font-weight:500}
+    input,select{width:100%;padding:9px 12px;font-size:13px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);outline:none;transition:border-color .15s}
+    input:focus,select:focus{border-color:var(--accent)}
+    select option{background:var(--bg2)}
 
-    .card {
-      background: var(--bg); border: 0.5px solid var(--border);
-      border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 16px;
-    }
+    /* ── Table ── */
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{font-size:11px;color:var(--text3);text-align:left;padding:8px 10px;border-bottom:0.5px solid var(--border2);font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+    td{padding:9px 10px;border-bottom:0.5px solid var(--border);color:var(--text)}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:rgba(255,255,255,.02)}
 
-    .section-label {
-      font-size: 11px; color: var(--text3); text-transform: uppercase;
-      letter-spacing: 0.06em; margin-bottom: 10px; font-weight: 500;
-    }
+    /* ── Zone badges ── */
+    .zone-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;display:inline-block}
+    .zone-A{background:rgba(99,102,241,.15);color:var(--accent2);border:0.5px solid rgba(99,102,241,.3)}
+    .zone-B{background:var(--green-fill);color:var(--green);border:0.5px solid rgba(34,197,94,.3)}
+    .zone-C{background:var(--amber-fill);color:var(--amber);border:0.5px solid rgba(245,158,11,.3)}
+    .zone-D{background:rgba(255,255,255,.05);color:var(--text3);border:0.5px solid var(--border2)}
 
-    .metrics {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 10px; margin-bottom: 20px;
-    }
-    .metric {
-      background: var(--bg2); border-radius: var(--radius);
-      padding: 14px 16px;
-    }
-    .metric-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
-    .metric-value { font-size: 24px; font-weight: 600; }
-    .metric-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    /* ── Legend ── */
+    .legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+    .legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)}
+    .legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
 
-    .input-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
-      gap: 10px; align-items: end; margin-bottom: 12px;
-    }
-    @media (max-width: 700px) {
-      .input-grid { grid-template-columns: 1fr 1fr; }
-    }
-    label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 4px; }
-    input[type="text"], input[type="number"], select {
-      width: 100%; padding: 8px 10px; font-size: 13px;
-      background: var(--bg2); border: 0.5px solid var(--border2);
-      border-radius: var(--radius); color: var(--text);
-      outline: none; transition: border-color 0.15s;
-    }
-    input:focus, select:focus { border-color: var(--blue-bar); }
+    /* ── Warehouse grid ── */
+    .warehouse-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}
+    .bin{height:38px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;cursor:pointer;transition:opacity .15s;border:0.5px solid transparent}
+    .bin:hover{opacity:.75}
+    .bin-A{background:rgba(99,102,241,.2);color:var(--accent2);border-color:rgba(99,102,241,.3)}
+    .bin-B{background:rgba(34,197,94,.15);color:var(--green);border-color:rgba(34,197,94,.25)}
+    .bin-C{background:rgba(245,158,11,.15);color:var(--amber);border-color:rgba(245,158,11,.25)}
+    .bin-D{background:rgba(255,255,255,.05);color:var(--text3);border-color:var(--border)}
+    .bin-empty{background:var(--bg3);color:var(--text3)}
 
-    button {
-      padding: 8px 16px; font-size: 13px; font-weight: 500;
-      background: var(--bg); border: 0.5px solid var(--border2);
-      border-radius: var(--radius); color: var(--text);
-      cursor: pointer; transition: background 0.15s, transform 0.1s;
-      white-space: nowrap;
-    }
-    button:hover { background: var(--bg2); }
-    button:active { transform: scale(0.98); }
-    .btn-primary {
-      background: var(--text); color: var(--bg);
-      border-color: var(--text); width: 100%; padding: 12px;
-      font-size: 14px; margin-top: 12px; border-radius: var(--radius);
-    }
-    .btn-primary:hover { opacity: 0.88; background: var(--text); }
+    /* ── Bar charts ── */
+    .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+    .bar-label{font-size:12px;color:var(--text2);width:140px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .bar-track{flex:1;height:20px;background:var(--bg3);border-radius:4px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;font-size:11px;font-weight:500;transition:width .5s ease}
+    .bar-A{background:rgba(99,102,241,.35);color:var(--accent2)}
+    .bar-B{background:rgba(34,197,94,.25);color:var(--green)}
+    .bar-C{background:rgba(245,158,11,.25);color:var(--amber)}
+    .bar-D{background:rgba(255,255,255,.08);color:var(--text3)}
+    .bar-COLD{background:rgba(45,212,191,.25);color:var(--cold)}
 
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th {
-      font-size: 11px; color: var(--text2); text-align: left;
-      padding: 8px 10px; border-bottom: 0.5px solid var(--border2); font-weight: 500;
-    }
-    td { padding: 8px 10px; border-bottom: 0.5px solid var(--border); color: var(--text); }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: var(--bg2); }
+    /* ── Info box ── */
+    .info-box{background:rgba(99,102,241,.08);border:0.5px solid rgba(99,102,241,.2);border-radius:var(--r);padding:14px 16px;font-size:13px;color:var(--accent2);line-height:1.7;margin-top:16px}
+    .info-box strong{font-weight:600;color:var(--text)}
 
-    .zone-badge {
-      font-size: 11px; font-weight: 500; padding: 2px 10px;
-      border-radius: 99px; display: inline-block;
-    }
-    .zone-A { background: var(--blue-fill); color: var(--blue-text); }
-    .zone-B { background: var(--green-fill); color: var(--green-text); }
-    .zone-C { background: var(--amber-fill); color: var(--amber-text); }
-    .zone-D { background: var(--gray-fill); color: var(--gray-text); }
+    /* ── EWM table ── */
+    .ewm-box{background:rgba(99,102,241,.06);border:0.5px solid rgba(99,102,241,.15);border-radius:var(--r);padding:14px 16px;font-size:13px;color:var(--text2);line-height:1.7;margin-top:14px}
+    .ewm-box strong{color:var(--accent2)}
 
-    .legend {
-      display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 14px;
-    }
-    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
-    .legend-dot { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+    /* ── Run button ── */
+    .run-btn{width:100%;padding:13px;font-size:14px;font-weight:600;background:var(--accent);color:#fff;border:none;border-radius:var(--r);cursor:pointer;margin-top:14px;letter-spacing:.01em;transition:opacity .15s}
+    .run-btn:hover{opacity:.88}
+    .run-btn:active{opacity:.75}
 
-    .warehouse-grid {
-      display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px;
-      margin-bottom: 12px;
-    }
-    .bin {
-      height: 40px; border-radius: 5px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 9px; font-weight: 600; cursor: pointer;
-      transition: opacity 0.15s; border: 0.5px solid transparent;
-      position: relative;
-    }
-    .bin:hover { opacity: 0.75; }
-    .bin-A { background: var(--blue-bar); color: var(--blue-text); }
-    .bin-B { background: var(--green-bar); color: var(--green-text); }
-    .bin-C { background: var(--amber-bar); color: var(--amber-text); }
-    .bin-D { background: var(--gray-bar); color: var(--gray-text); }
-    .bin-empty { background: var(--bg2); color: var(--text3); }
+    /* ── Remove btn ── */
+    .rm-btn{background:none;border:0.5px solid var(--border2);border-radius:4px;color:var(--text3);cursor:pointer;padding:3px 8px;font-size:12px;transition:color .15s,border-color .15s}
+    .rm-btn:hover{color:var(--red);border-color:var(--red)}
 
-    .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
-    .bar-label {
-      font-size: 12px; color: var(--text2); width: 140px;
-      flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .bar-track {
-      flex: 1; height: 20px; background: var(--bg2);
-      border-radius: 4px; overflow: hidden;
-    }
-    .bar-fill {
-      height: 100%; border-radius: 4px; display: flex; align-items: center;
-      padding-left: 8px; font-size: 11px; font-weight: 500;
-      transition: width 0.5s ease;
-    }
-    .bar-A { background: var(--blue-bar); color: var(--blue-text); }
-    .bar-B { background: var(--green-bar); color: var(--green-text); }
-    .bar-C { background: var(--amber-bar); color: var(--amber-text); }
-    .bar-D { background: var(--gray-bar); color: var(--gray-text); }
+    /* ── Add btn ── */
+    .add-btn{padding:9px 16px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text2);cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;transition:background .15s,color .15s}
+    .add-btn:hover{background:var(--bg4);color:var(--text)}
 
-    .insight {
-      background: var(--bg2); border-radius: var(--radius);
-      padding: 14px 16px; font-size: 13px; color: var(--text2);
-      line-height: 1.7; margin-top: 16px;
-    }
-    .insight strong { color: var(--text); font-weight: 500; }
+    .mono{font-family:"SF Mono","Fira Code",monospace;font-size:12px}
+    .section-gap{margin-top:24px}
 
-    .ewm-box {
-      background: var(--blue-fill); border: 0.5px solid var(--blue-bar);
-      border-radius: var(--radius); padding: 14px 16px;
-      font-size: 13px; color: var(--blue-text); line-height: 1.7; margin-top: 16px;
-    }
-
-    .dispatch-label {
-      font-size: 10px; color: var(--text3); text-align: center;
-      margin-bottom: 4px; letter-spacing: 0.04em;
-    }
-
-    .mono { font-family: "SF Mono", "Fira Code", monospace; font-size: 12px; }
-
-    footer {
-      margin-top: 40px; text-align: center;
-      font-size: 12px; color: var(--text3);
-    }
+    footer{border-top:0.5px solid var(--border);padding:20px 32px;text-align:center;font-size:12px;color:var(--text3)}
+    footer a{color:var(--text3);text-decoration:none}
+    footer a:hover{color:var(--text2)}
   </style>
 </head>
 <body>
-<div class="container">
 
-  <header>
-    <h1>Warehouse Slotting Optimizer</h1>
-    <p>Score SKUs by pick velocity, weight, and cold chain requirements — then assign them to optimal warehouse zones.<br>
-    Mirrors SAP EWM putaway strategy logic (storage type search sequences).</p>
-    <span class="badge">SAP EWM Aligned</span>
-    <span class="badge" style="background:var(--green-fill);color:var(--green-text)">Supply Chain</span>
-    <span class="badge" style="background:var(--amber-fill);color:var(--amber-text)">Warehouse Operations</span>
-  </header>
+<nav>
+  <div class="nav-left">
+    <a href="index.html" class="nav-back">← Portfolio</a>
+    <div class="nav-divider"></div>
+    <span class="nav-title">Warehouse Slotting Optimizer</span>
+    <span class="nav-badge">SAP EWM</span>
+  </div>
+</nav>
 
-  <div class="tab-row">
+<div class="header">
+  <div class="header-inner">
+    <h1>Warehouse <span>Slotting Optimizer</span></h1>
+    <p>Score SKUs by pick velocity, weight, and cold chain requirements — then assign them to optimal bin zones. Cold chain items are isolated into a dedicated storage pool, mirroring how SAP EWM enforces storage type restrictions in the material master.</p>
+    <div class="header-tags">
+      <span class="htag accent">SAP EWM Aligned</span>
+      <span class="htag">Putaway Strategy</span>
+      <span class="htag">Storage Type Search</span>
+      <span class="htag">Cold Chain Isolation</span>
+      <span class="htag">Zone A–D + LG05</span>
+    </div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab-bar-inner">
     <button class="tab active" onclick="showTab('input')">SKU input</button>
     <button class="tab" onclick="showTab('results')">Slot assignments</button>
     <button class="tab" onclick="showTab('map')">Warehouse map</button>
     <button class="tab" onclick="showTab('analysis')">Analysis</button>
     <button class="tab" onclick="showTab('ewm')">EWM logic</button>
   </div>
+</div>
 
-  <!-- TAB: INPUT -->
+<div class="main">
+
+  <!-- SKU INPUT -->
   <div id="tab-input" class="tab-panel active">
     <div class="card">
-      <div class="section-label">Add SKUs to optimize</div>
+      <div class="card-title">Add SKUs to optimize</div>
       <div class="input-grid">
         <div><label>SKU name</label><input type="text" id="inp-sku" placeholder="e.g. Paracetamol 500mg"></div>
         <div><label>Daily picks</label><input type="number" id="inp-picks" placeholder="120" min="1"></div>
         <div><label>Weight (kg)</label><input type="number" id="inp-weight" placeholder="0.5" min="0.1" step="0.1"></div>
-        <div><label>Size</label>
-          <select id="inp-size">
-            <option value="S">Small</option>
-            <option value="M" selected>Medium</option>
-            <option value="L">Large</option>
-          </select>
-        </div>
-        <div><label>Category</label>
-          <select id="inp-cat">
-            <option value="pharma">Pharma</option>
-            <option value="medical">Medical device</option>
-            <option value="consumer">Consumer</option>
-            <option value="cold">Cold chain</option>
-          </select>
-        </div>
-        <div><label>&nbsp;</label><button onclick="addSKU()">+ Add</button></div>
+        <div><label>Size</label><select id="inp-size"><option value="S">Small</option><option value="M" selected>Medium</option><option value="L">Large</option></select></div>
+        <div><label>Category</label><select id="inp-cat"><option value="pharma">Pharma</option><option value="medical">Medical device</option><option value="consumer">Consumer</option><option value="cold">Cold chain</option></select></div>
+        <div><label>&nbsp;</label><button class="add-btn" onclick="addSKU()">+ Add SKU</button></div>
       </div>
-
       <table>
         <thead><tr><th>SKU</th><th>Daily picks</th><th>Weight (kg)</th><th>Size</th><th>Category</th><th></th></tr></thead>
         <tbody id="sku-tbody"></tbody>
       </table>
-
-      <button class="btn-primary" onclick="runOptimizer()">Run slotting optimizer →</button>
+      <button class="run-btn" onclick="runOptimizer()">Run slotting optimizer →</button>
     </div>
   </div>
 
-  <!-- TAB: RESULTS -->
+  <!-- RESULTS -->
   <div id="tab-results" class="tab-panel">
     <div class="metrics" id="metrics-row">
-      <div class="metric"><div class="metric-label">Total SKUs</div><div class="metric-value" id="m-skus">—</div></div>
-      <div class="metric"><div class="metric-label">Zone A SKUs</div><div class="metric-value" id="m-zA">—</div><div class="metric-sub">High-velocity, golden zone</div></div>
-      <div class="metric"><div class="metric-label">Est. travel reduction</div><div class="metric-value" id="m-travel">—</div><div class="metric-sub">vs. random slotting</div></div>
-      <div class="metric"><div class="metric-label">Labor efficiency gain</div><div class="metric-value" id="m-gain">—</div></div>
+      <div class="metric green"><div class="metric-lbl">Total SKUs</div><div class="metric-val" id="m-skus">—</div></div>
+      <div class="metric amber"><div class="metric-lbl">Zone A SKUs</div><div class="metric-val" id="m-zA">—</div><div class="metric-sub">High-velocity</div></div>
+      <div class="metric green"><div class="metric-lbl">Travel reduction</div><div class="metric-val" id="m-travel">—</div><div class="metric-sub">vs random slotting</div></div>
+      <div class="metric amber"><div class="metric-lbl">Labor efficiency</div><div class="metric-val" id="m-gain">—</div></div>
     </div>
-
     <div class="card">
       <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:var(--blue-bar)"></div>Zone A — golden zone (ergonomic reach, near pick path)</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--green-bar)"></div>Zone B — mid-velocity</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--amber-bar)"></div>Zone C — low-velocity</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--gray-bar)"></div>Zone D — bulk / slow-moving</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#BAE6FD"></div>❄ Cold storage — isolated, temperature-controlled (LG05)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(99,102,241,.4)"></div>Zone A — golden zone, near pick path</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(34,197,94,.4)"></div>Zone B — mid-velocity</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(245,158,11,.4)"></div>Zone C — low-velocity</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,.15)"></div>Zone D — bulk/slow</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(45,212,191,.4)"></div>❄ Cold storage (LG05) — isolated</div>
       </div>
       <table>
         <thead><tr><th>SKU</th><th>Daily picks</th><th>Weight (kg)</th><th>Velocity score</th><th>Zone</th><th>Bin ID</th><th>Rationale</th></tr></thead>
         <tbody id="results-tbody"></tbody>
       </table>
-      <div class="insight" id="insight-box"></div>
+      <div class="info-box" id="insight-box"></div>
     </div>
   </div>
 
-  <!-- TAB: MAP -->
+  <!-- MAP -->
   <div id="tab-map" class="tab-panel">
     <div class="card">
-      <div class="section-label">Warehouse floor plan — bin zone allocation</div>
+      <div class="card-title">Warehouse floor plan — bin zone allocation</div>
       <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:var(--blue-bar)"></div>Zone A</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--green-bar)"></div>Zone B</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--amber-bar)"></div>Zone C</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--gray-bar)"></div>Zone D</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--bg2)"></div>Empty</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(99,102,241,.4)"></div>Zone A</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(34,197,94,.3)"></div>Zone B</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(245,158,11,.3)"></div>Zone C</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,.1)"></div>Zone D</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--bg3)"></div>Empty</div>
       </div>
-      <div class="dispatch-label">↑ DISPATCH / PICK PATH ENTRY</div>
+      <div style="font-size:10px;color:var(--text3);text-align:center;margin-bottom:6px;letter-spacing:.05em">↑ DISPATCH / PICK PATH ENTRY</div>
       <div class="warehouse-grid" id="warehouse-grid"></div>
       <div id="cold-storage-section"></div>
-      <div class="insight">
-        Bins closest to the <strong>dispatch/pick path entry (top)</strong> are Zone A.
-        Zone A slots = shortest picker travel = fastest order fulfillment.
-        <strong>Cold chain items (❄) are routed to a dedicated temperature-controlled section (LG05)</strong> —
-        they never compete with ambient SKUs for Zone A/B/C/D bins.
+      <div class="info-box" style="margin-top:16px">
+        Bins closest to the <strong>dispatch/pick path entry (top)</strong> are Zone A — shortest picker travel, fastest fulfillment.
+        <strong>Cold chain items (❄) are routed to a dedicated LG05 section</strong> — never competing with ambient zones.
         In SAP EWM, this is enforced via storage type restrictions on the material master.
       </div>
     </div>
   </div>
 
-  <!-- TAB: ANALYSIS -->
+  <!-- ANALYSIS -->
   <div id="tab-analysis" class="tab-panel">
     <div class="card">
-      <div class="section-label">Pick frequency by SKU</div>
+      <div class="card-title">Pick frequency by SKU</div>
       <div id="bar-chart"></div>
-      <div class="section-label" style="margin-top:24px">Zone distribution</div>
+      <div class="card-title section-gap">Zone distribution</div>
       <div id="zone-dist"></div>
     </div>
   </div>
 
-  <!-- TAB: EWM LOGIC -->
+  <!-- EWM LOGIC -->
   <div id="tab-ewm" class="tab-panel">
     <div class="card">
-      <div class="section-label">How this maps to SAP EWM</div>
+      <div class="card-title">How this maps to SAP EWM</div>
       <table>
         <thead><tr><th>Optimizer concept</th><th>SAP EWM equivalent</th><th>Transaction / config</th></tr></thead>
         <tbody>
-          <tr><td>Zone A / B / C / D</td><td>Storage sections / storage types</td><td>LX01, SPRO warehouse structure</td></tr>
+          <tr><td>Zone A / B / C / D</td><td>Storage sections / storage types (LG01–LG04)</td><td>LX01, SPRO warehouse structure</td></tr>
           <tr><td>Velocity score ranking</td><td>Storage type search sequence (putaway)</td><td>SPRO → EWM → Goods Receipt</td></tr>
           <tr><td>Weight penalty</td><td>Weight capacity check on storage bin</td><td>Warehouse bin master data</td></tr>
-          <tr><td><strong>❄ Cold chain → isolated section</strong></td><td><strong>Temperature-controlled storage type (LG05) — assigned in material master, never shares search sequence with ambient LG01–LG04</strong></td><td>Material master → Warehouse mgmt → Storage type indicator</td></tr>
+          <tr><td style="color:var(--cold)">❄ Cold chain → isolated section</td><td>Temperature-controlled storage type (LG05) — assigned in material master, never shares search sequence with ambient LG01–LG04</td><td>Material master → Warehouse mgmt → Storage type indicator</td></tr>
           <tr><td>Bin ID (e.g. A-01, CC-01)</td><td>Storage bin (warehouse no. / section / bin)</td><td>LS01N, LX04</td></tr>
-          <tr><td>Reassigning zones</td><td>Rearrangement / reslotting transfer order</td><td>LT0A, LT10</td></tr>
+          <tr><td>Reassigning zones</td><td>Rearrangement / reslotting Transfer Order (TO)</td><td>LT0A, LT10</td></tr>
         </tbody>
       </table>
-      <div class="ewm-box" style="margin-top:16px">
-        <strong>EWM putaway flow:</strong> Goods receipt → Transfer order created →
-        EWM checks storage type search sequence (Zone A first) →
+      <div class="ewm-box">
+        <strong>EWM putaway flow:</strong> Goods Receipt (GR) → Transfer Order (TO) created →
+        EWM checks storage type search sequence (Zone A / LG01 first) →
         Bin determination based on capacity + weight + temperature →
         Warehouse task confirmed → Stock updated in bin.
         This optimizer replicates the zone-ranking step of that decision tree.
@@ -371,13 +286,13 @@
     </div>
   </div>
 
-  <footer>
-    Built to demonstrate SAP EWM warehouse operations knowledge &mdash;
-    Kaushika Naik Ramavatu &middot; MS Technology Management, UIUC Gies &middot;
-    <a href="https://kaushikanaikr.substack.com" style="color:inherit">The Flow of Things</a>
-  </footer>
-
 </div>
+
+<footer>
+  Warehouse Slotting Optimizer — SAP EWM Supply Chain Portfolio &mdash;
+  Kaushika Naik Ramavatu · MS Technology Management, UIUC Gies ·
+  <a href="https://kaushikanaikr.substack.com">The Flow of Things</a>
+</footer>
 
 <script>
 const defaultSKUs = [
@@ -401,7 +316,7 @@ function renderSKUTable() {
     <tr>
       <td>${s.name}</td><td>${s.picks}</td><td>${s.weight}</td>
       <td>${s.size}</td><td>${s.cat}</td>
-      <td><button onclick="removeSKU(${i})" style="padding:2px 8px;font-size:12px">✕</button></td>
+      <td><button class="rm-btn" onclick="removeSKU(${i})">✕</button></td>
     </tr>`).join('');
 }
 
@@ -424,16 +339,10 @@ function removeSKU(i) { skus.splice(i, 1); renderSKUTable(); }
 function velocityScore(sku) {
   const sizeW   = { S: 1.0, M: 0.85, L: 0.65 };
   const weightW = sku.weight <= 0.5 ? 1.0 : sku.weight <= 1.5 ? 0.85 : 0.65;
-  // Cold chain items are scored independently within their own storage type —
-  // they do NOT compete with ambient SKUs for Zone A/B/C/D.
-  // This mirrors SAP EWM: cold storage type (LG05) has its own search sequence,
-  // completely separate from ambient storage types (LG01–LG04).
   return Math.round(sku.picks * sizeW[sku.size] * weightW);
 }
 
-function assignZone(score, maxScore, isCold) {
-  // Cold chain items always go to Cold Storage — never ambient zones
-  if (isCold) return 'COLD';
+function assignZone(score, maxScore) {
   const p = score / maxScore;
   if (p >= 0.60) return 'A';
   if (p >= 0.35) return 'B';
@@ -442,7 +351,6 @@ function assignZone(score, maxScore, isCold) {
 }
 
 function coldSubZone(score, maxColdScore) {
-  // Within cold storage, items are still ranked by velocity
   const p = score / maxColdScore;
   if (p >= 0.60) return 'Cold-1 (front)';
   if (p >= 0.35) return 'Cold-2 (mid)';
@@ -451,7 +359,7 @@ function coldSubZone(score, maxColdScore) {
 
 function zoneRationale(sku, zone) {
   const r = [];
-  if (zone === 'COLD') r.push('Cold chain → dedicated temperature-controlled storage type (LG05) — never competes with ambient zones');
+  if (zone === 'COLD') r.push('Cold chain → LG05 dedicated storage, never competes with ambient zones');
   else if (zone === 'A') r.push('High-velocity → golden zone, minimal travel');
   else if (zone === 'B') r.push('Mid-velocity → secondary pick aisle');
   else if (zone === 'C') r.push('Low-velocity → outer storage area');
@@ -464,46 +372,41 @@ function zoneRationale(sku, zone) {
 function runOptimizer() {
   if (skus.length === 0) return alert('Add at least one SKU first.');
   const scored = skus.map(s => ({ ...s, score: velocityScore(s) }));
-
-  // Separate cold chain from ambient — two independent pools
   const ambientSKUs = scored.filter(s => s.cat !== 'cold');
   const coldSKUs    = scored.filter(s => s.cat === 'cold');
+  const maxAmbient  = ambientSKUs.length > 0 ? Math.max(...ambientSKUs.map(s => s.score)) : 1;
+  const maxCold     = coldSKUs.length > 0    ? Math.max(...coldSKUs.map(s => s.score))    : 1;
 
-  const maxAmbient = ambientSKUs.length > 0 ? Math.max(...ambientSKUs.map(s => s.score)) : 1;
-  const maxCold    = coldSKUs.length    > 0 ? Math.max(...coldSKUs.map(s => s.score))    : 1;
-
-  const ambientResults = ambientSKUs.map((s, i) => {
-    const zone = assignZone(s.score, maxAmbient, false);
-    return { ...s, zone, bin: zone + '-' + String(i + 1).padStart(2, '0'), rationale: zoneRationale(s, zone), subZone: null };
-  });
-
-  const coldResults = coldSKUs.map((s, i) => {
-    const zone = 'COLD';
-    const sub  = coldSubZone(s.score, maxCold);
-    return { ...s, zone, bin: 'CC-' + String(i + 1).padStart(2, '0'), rationale: zoneRationale(s, zone), subZone: sub };
-  });
+  const ambientResults = ambientSKUs.map((s, i) => ({
+    ...s, zone: assignZone(s.score, maxAmbient),
+    bin: assignZone(s.score, maxAmbient) + '-' + String(i+1).padStart(2,'0'),
+    rationale: zoneRationale(s, assignZone(s.score, maxAmbient)), subZone: null
+  }));
+  const coldResults = coldSKUs.map((s, i) => ({
+    ...s, zone: 'COLD',
+    bin: 'CC-' + String(i+1).padStart(2,'0'),
+    rationale: zoneRationale(s, 'COLD'),
+    subZone: coldSubZone(s.score, maxCold)
+  }));
 
   results = [...ambientResults, ...coldResults].sort((a, b) => b.score - a.score);
 
-  const zA         = results.filter(r => r.zone === 'A').length;
-  const zCold      = results.filter(r => r.zone === 'COLD').length;
-  const totalPicks = results.reduce((s, r) => s + r.picks, 0);
-  const aPickPct   = Math.round(results.filter(r => r.zone === 'A').reduce((s, r) => s + r.picks, 0) / totalPicks * 100);
-  const travelGain = Math.round(30 + aPickPct * 0.3);
+  const zA        = results.filter(r => r.zone === 'A').length;
+  const zCold     = results.filter(r => r.zone === 'COLD').length;
+  const totalPicks= results.reduce((s, r) => s + r.picks, 0);
+  const aPickPct  = Math.round(results.filter(r => r.zone === 'A').reduce((s, r) => s + r.picks, 0) / totalPicks * 100);
+  const travelGain= Math.round(30 + aPickPct * 0.3);
 
-  document.getElementById('m-skus').textContent   = results.length;
-  document.getElementById('m-zA').textContent      = zA + (zCold > 0 ? ` + ${zCold} cold` : '');
-  document.getElementById('m-travel').textContent  = '-' + travelGain + '%';
-  document.getElementById('m-gain').textContent    = Math.round(travelGain * 0.6) + '%';
+  document.getElementById('m-skus').textContent  = results.length;
+  document.getElementById('m-zA').textContent     = zA + (zCold > 0 ? ` + ${zCold} cold` : '');
+  document.getElementById('m-travel').textContent = '-' + travelGain + '%';
+  document.getElementById('m-gain').textContent   = Math.round(travelGain * 0.6) + '%';
 
   document.getElementById('results-tbody').innerHTML = results.map(r => `
     <tr>
-      <td>${r.name}</td>
-      <td>${r.picks}</td>
-      <td>${r.weight}</td>
-      <td>${r.score}</td>
+      <td>${r.name}</td><td>${r.picks}</td><td>${r.weight}</td><td>${r.score}</td>
       <td>${r.zone === 'COLD'
-        ? `<span class="zone-badge" style="background:#E0F2FE;color:#0C4A6E">❄ Cold Storage</span>`
+        ? `<span class="zone-badge" style="background:rgba(45,212,191,.15);color:var(--cold);border:0.5px solid rgba(45,212,191,.3)">❄ Cold (LG05)</span>`
         : `<span class="zone-badge zone-${r.zone}">Zone ${r.zone}</span>`}
         ${r.subZone ? `<br><span style="font-size:11px;color:var(--text3)">${r.subZone}</span>` : ''}
       </td>
@@ -511,13 +414,13 @@ function runOptimizer() {
       <td style="font-size:12px;color:var(--text2)">${r.rationale}</td>
     </tr>`).join('');
 
-  const topA   = results.filter(r => r.zone === 'A').map(r => r.name).slice(0, 3).join(', ') || 'none';
+  const topA    = results.filter(r => r.zone === 'A').map(r => r.name).slice(0,3).join(', ') || 'none';
   const topCold = results.filter(r => r.zone === 'COLD').map(r => r.name).join(', ') || 'none';
   document.getElementById('insight-box').innerHTML =
-    `<strong>Optimization summary:</strong> Zone A contains ${zA} ambient SKU${zA !== 1 ? 's' : ''} (${aPickPct}% of daily picks) slotted near the pick path. 
-    ${zCold > 0 ? `<strong>${zCold} cold chain SKU${zCold !== 1 ? 's' : ''} (${topCold}) routed to dedicated cold storage (LG05) — isolated from ambient zone competition.</strong> ` : ''}
-    Estimated picker travel reduction: ${travelGain}%. 
-    In SAP EWM, cold chain items are assigned to a temperature-controlled storage type in the material master — the putaway strategy evaluates LG05 exclusively for these SKUs, never LG01–LG04.`;
+    `<strong>Optimization summary:</strong> Zone A contains ${zA} ambient SKU${zA!==1?'s':''} (${aPickPct}% of daily picks) slotted near the pick path.
+    ${zCold > 0 ? `<strong>${zCold} cold chain SKU${zCold!==1?'s':''} (${topCold}) routed to LG05 — isolated from ambient zone competition.</strong> ` : ''}
+    Estimated picker travel reduction: ${travelGain}%.
+    In SAP EWM, cold chain items are assigned to a temperature-controlled storage type in the material master — putaway strategy evaluates LG05 exclusively, never LG01–LG04.`;
 
   renderWarehouseMap();
   renderAnalysis();
@@ -525,60 +428,40 @@ function runOptimizer() {
 }
 
 function renderWarehouseMap() {
-  const layout = [
-    'A','A','A','B','B','C','C','D',
-    'A','A','B','B','C','C','D','D',
-    'A','B','B','C','C','D','D','D',
-    'B','B','C','C','D','D','D','D'
-  ];
-  const byZone = { A: [], B: [], C: [], D: [], COLD: [] };
+  const layout = ['A','A','A','B','B','C','C','D','A','A','B','B','C','C','D','D','A','B','B','C','C','D','D','D','B','B','C','C','D','D','D','D'];
+  const byZone = { A:[], B:[], C:[], D:[], COLD:[] };
   results.forEach(r => byZone[r.zone].push(r));
-  const used = { A: 0, B: 0, C: 0, D: 0 };
-
-  const ambientGrid = layout.map(zone => {
-    const sku = byZone[zone][used[zone]];
-    used[zone]++;
+  const used = { A:0, B:0, C:0, D:0 };
+  document.getElementById('warehouse-grid').innerHTML = layout.map(zone => {
+    const sku = byZone[zone][used[zone]]; used[zone]++;
     if (sku) return `<div class="bin bin-${zone}" title="${sku.name} | ${sku.picks} picks/day">${sku.bin}</div>`;
     return `<div class="bin bin-empty">—</div>`;
   }).join('');
 
   const coldBins = byZone['COLD'].length > 0
-    ? byZone['COLD'].map(sku =>
-        `<div class="bin" style="background:#BAE6FD;color:#0C4A6E;border-color:#7DD3FC" title="${sku.name} | ${sku.picks} picks/day">❄ ${sku.bin}</div>`
-      ).join('') +
+    ? byZone['COLD'].map(s => `<div class="bin" style="background:rgba(45,212,191,.15);color:var(--cold);border-color:rgba(45,212,191,.3)" title="${s.name}">❄ ${s.bin}</div>`).join('') +
       Array(Math.max(0, 8 - byZone['COLD'].length)).fill(`<div class="bin bin-empty">❄ —</div>`).join('')
     : '';
-
-  const coldSection = byZone['COLD'].length > 0
-    ? `<div style="margin-top:16px;font-size:11px;color:#0C4A6E;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">
-        ❄ Cold storage section — LG05 (temperature-controlled, isolated from ambient zones)
-       </div>
-       <div class="warehouse-grid">${coldBins}</div>`
+  document.getElementById('cold-storage-section').innerHTML = byZone['COLD'].length > 0
+    ? `<div style="margin-top:14px;font-size:11px;color:var(--cold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">❄ Cold storage — LG05 (temperature-controlled, isolated from ambient)</div><div class="warehouse-grid">${coldBins}</div>`
     : '';
-
-  document.getElementById('warehouse-grid').innerHTML = ambientGrid;
-  document.getElementById('cold-storage-section').innerHTML = coldSection;
 }
 
 function renderAnalysis() {
   const maxPicks = Math.max(...results.map(r => r.picks));
   document.getElementById('bar-chart').innerHTML = results.map(r => `
     <div class="bar-row">
-      <div class="bar-label" title="${r.name}">${r.name.length > 18 ? r.name.slice(0,17) + '…' : r.name}</div>
-      <div class="bar-track">
-        <div class="bar-fill bar-${r.zone}" style="width:${Math.round(r.picks/maxPicks*100)}%">${r.picks}/day</div>
-      </div>
+      <div class="bar-label" title="${r.name}">${r.name.length > 18 ? r.name.slice(0,17)+'…' : r.name}</div>
+      <div class="bar-track"><div class="bar-fill bar-${r.zone}" style="width:${Math.round(r.picks/maxPicks*100)}%">${r.picks}/day</div></div>
     </div>`).join('');
 
   const counts = { A:0, B:0, C:0, D:0 };
-  results.forEach(r => counts[r.zone]++);
+  results.forEach(r => { if(counts[r.zone]!==undefined) counts[r.zone]++; });
   const total = results.length;
   document.getElementById('zone-dist').innerHTML = Object.entries(counts).map(([z, n]) => `
     <div class="bar-row">
       <div class="bar-label">Zone ${z}</div>
-      <div class="bar-track">
-        <div class="bar-fill bar-${z}" style="width:${Math.round(n/total*100)}%">${n} SKU${n!==1?'s':''}</div>
-      </div>
+      <div class="bar-track"><div class="bar-fill bar-${z}" style="width:${Math.round(n/total*100)}%">${n} SKU${n!==1?'s':''}</div></div>
     </div>`).join('');
 }
 

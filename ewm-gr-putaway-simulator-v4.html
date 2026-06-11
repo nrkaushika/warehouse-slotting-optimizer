@@ -3,58 +3,55 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SAP EWM — GR to Putaway Simulator V4</title>
+  <title>GR to Putaway Simulator V4 — SAP EWM Portfolio</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
-      --bg:#fff;--bg2:#f5f4f0;--bg3:#eeede9;--text:#1a1a18;--text2:#5f5e5a;--text3:#888780;
-      --border:rgba(0,0,0,.12);--border2:rgba(0,0,0,.22);
-      --blue-fill:#E6F1FB;--blue-text:#0C447C;--blue-bar:#B5D4F4;
-      --green-fill:#EAF3DE;--green-text:#27500A;--green-bar:#C0DD97;
-      --amber-fill:#FAEEDA;--amber-text:#633806;--amber-bar:#FAC775;
-      --red-fill:#FDECEA;--red-text:#7F1D1D;--red-bar:#FBBFBF;
-      --cold-fill:#E0F2FE;--cold-text:#0C4A6E;--cold-bar:#7DD3FC;
-      --purple-fill:#F3E8FF;--purple-text:#6B21A8;--purple-bar:#C084FC;
+      --bg:#0f1117;--bg2:#1a1d27;--bg3:#222638;--bg4:#2a2f45;
+      --text:#e8e9f0;--text2:#9496a8;--text3:#5c5f75;
+      --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+      --accent:#2dd4bf;--accent2:#5eead4;--accent3:rgba(45,212,191,.1);
+      --blue-fill:rgba(45,212,191,.08);--blue-text:#5eead4;--blue-bar:#2dd4bf;
+      --green-fill:rgba(34,197,94,.1);--green-text:#22c55e;--green-bar:#22c55e;
+      --amber-fill:rgba(245,158,11,.1);--amber-text:#f59e0b;--amber-bar:#f59e0b;
+      --red-fill:rgba(239,68,68,.1);--red-text:#ef4444;--red-bar:#ef4444;
+      --cold-fill:rgba(45,212,191,.1);--cold-text:#5eead4;--cold-bar:#2dd4bf;
+      --purple-fill:rgba(167,139,250,.1);--purple-text:#a78bfa;--purple-bar:#a78bfa;
       --r:8px;--rl:14px
     }
-    @media(prefers-color-scheme:dark){:root{
-      --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;--text:#e8e6de;--text2:#9c9a92;--text3:#6e6c66;
-      --border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.2);
-      --blue-fill:#042C53;--blue-text:#B5D4F4;--blue-bar:#185FA5;
-      --green-fill:#173404;--green-text:#C0DD97;--green-bar:#3B6D11;
-      --amber-fill:#412402;--amber-text:#FAC775;--amber-bar:#854F0B;
-      --red-fill:#450A0A;--red-text:#FBBFBF;--red-bar:#7F1D1D;
-      --cold-fill:#082F49;--cold-text:#7DD3FC;--cold-bar:#0369A1;
-      --purple-fill:#2E1065;--purple-text:#C084FC;--purple-bar:#7E22CE;
-    }}
-    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg3);color:var(--text);min-height:100vh;padding:24px 16px 60px}
-    .wrap{max-width:840px;margin:0 auto}
-    h1{font-size:20px;font-weight:600;margin-bottom:4px}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+    /* Nav */
+    nav-top{display:block;padding:14px 32px;border-bottom:0.5px solid var(--border);background:rgba(15,17,23,.92);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100}
+
+    .wrap{max-width:840px;margin:0 auto;padding:24px 24px 60px}
+    h1{font-size:22px;font-weight:700;margin-bottom:4px;letter-spacing:-.02em}
+    h1 span{background:linear-gradient(135deg,var(--accent2),#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
     .subtitle{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px}
     .badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
-    .badge{font-size:11px;font-weight:500;padding:2px 10px;border-radius:99px;background:var(--blue-fill);color:var(--blue-text)}
-    .badge.g{background:var(--green-fill);color:var(--green-text)}
-    .badge.a{background:var(--amber-fill);color:var(--amber-text)}
-    .badge.r{background:var(--red-fill);color:var(--red-text)}
-    .badge.c{background:var(--cold-fill);color:var(--cold-text)}
-    .badge.p{background:var(--purple-fill);color:var(--purple-text)}
-    .vtag{display:inline-block;font-size:10px;background:var(--blue-fill);color:var(--blue-text);border-radius:4px;padding:1px 6px;margin-left:8px;font-weight:600;vertical-align:middle}
+    .badge{font-size:11px;font-weight:500;padding:3px 10px;border-radius:99px;background:var(--accent3);color:var(--accent2);border:0.5px solid rgba(45,212,191,.25)}
+    .badge.g{background:var(--green-fill);color:var(--green-text);border-color:rgba(34,197,94,.25)}
+    .badge.a{background:var(--amber-fill);color:var(--amber-text);border-color:rgba(245,158,11,.25)}
+    .badge.r{background:var(--red-fill);color:var(--red-text);border-color:rgba(239,68,68,.25)}
+    .badge.c{background:var(--cold-fill);color:var(--cold-text);border-color:rgba(45,212,191,.25)}
+    .badge.p{background:var(--purple-fill);color:var(--purple-text);border-color:rgba(167,139,250,.25)}
+    .vtag{display:inline-block;font-size:10px;background:var(--accent3);color:var(--accent2);border-radius:4px;padding:1px 6px;margin-left:8px;font-weight:600;vertical-align:middle;border:0.5px solid rgba(45,212,191,.3)}
 
     /* Scenario bar */
-    .sc-bar{background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--rl);padding:16px 18px;margin-bottom:18px}
+    .sc-bar{background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--rl);padding:16px 18px;margin-bottom:18px}
     .sc-bar h3{font-size:13px;font-weight:600;margin-bottom:10px}
     .sc-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
     @media(max-width:700px){.sc-grid{grid-template-columns:repeat(3,1fr)}}
-    .sc-btn{padding:9px 6px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;text-align:center;font-size:11px;font-weight:500;transition:all .15s;line-height:1.4}
+    .sc-btn{padding:9px 6px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;text-align:center;font-size:11px;font-weight:500;transition:all .15s;line-height:1.4}
     .sc-btn:hover{border-color:var(--text3);color:var(--text)}
-    .sc-btn.active{border-color:var(--text);background:var(--text);color:var(--bg)}
+    .sc-btn.active{border-color:var(--accent);background:var(--accent);color:#0f1117}
     .sc-icon{font-size:18px;display:block;margin-bottom:3px}
 
     /* Progress */
     .prog{display:flex;align-items:center;margin-bottom:18px}
     .prog-step{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;cursor:pointer}
     .prog-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;z-index:1;border:2px solid var(--border2);background:var(--bg2);color:var(--text3);transition:all .2s}
-    .prog-dot.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+    .prog-dot.active{background:var(--accent);color:#0f1117;border-color:var(--accent)}
     .prog-dot.done{background:var(--green-bar);color:var(--green-text);border-color:var(--green-bar)}
     .prog-dot.warn{background:var(--amber-bar);color:var(--amber-text);border-color:var(--amber-bar)}
     .prog-dot.cold{background:var(--cold-bar);color:var(--cold-text);border-color:var(--cold-bar)}
@@ -75,20 +72,20 @@
     .b-tag.on{opacity:1}
 
     /* Card */
-    .card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:24px 26px 20px;margin-bottom:14px}
+    .card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--rl);padding:24px 26px 20px;margin-bottom:14px}
     .step-no{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
     .step-title{font-size:18px;font-weight:600;margin-bottom:5px}
     .step-desc{font-size:13px;color:var(--text2);line-height:1.7}
-    .tx-badge{display:inline-flex;align-items:center;gap:5px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--r);padding:5px 11px;font-size:12px;color:var(--text2);margin-top:9px;font-family:monospace}
-    .tx-badge span{font-weight:600;color:var(--blue-text)}
+    .tx-badge{display:inline-flex;align-items:center;gap:5px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--r);padding:5px 11px;font-size:12px;color:var(--text2);margin-top:9px;font-family:monospace}
+    .tx-badge span{font-weight:600;color:var(--accent2)}
 
     /* Fields */
     .fields{display:grid;gap:11px;margin-top:16px}
     .frow{display:grid;grid-template-columns:1fr 1fr;gap:11px}
     @media(max-width:500px){.frow{grid-template-columns:1fr}}
     .field label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px;font-weight:500}
-    .field input,.field select{width:100%;padding:8px 11px;font-size:13px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);outline:none;transition:border-color .15s}
-    .field input:focus,.field select:focus{border-color:var(--blue-bar)}
+    .field input,.field select{width:100%;padding:8px 11px;font-size:13px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);outline:none;transition:border-color .15s}
+    .field input:focus,.field select:focus{border-color:var(--accent)}
     .field input[readonly]{opacity:.6;cursor:default}
     .field input.err,.field select.err{border-color:#ef4444}
     .hint{font-size:11px;color:var(--text3);margin-top:3px}
@@ -110,31 +107,31 @@
     .door-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
     @media(max-width:500px){.door-grid{grid-template-columns:repeat(2,1fr)}}
     .door-card{border-radius:var(--r);padding:10px 12px;border:1.5px solid var(--border2);text-align:center;font-size:12px;cursor:pointer;transition:all .15s;position:relative}
-    .door-card.free{background:var(--green-fill);border-color:var(--green-bar);color:var(--green-text)}
-    .door-card.occupied{background:var(--red-fill);border-color:var(--red-bar);color:var(--red-text);cursor:not-allowed}
-    .door-card.scheduled{background:var(--amber-fill);border-color:var(--amber-bar);color:var(--amber-text)}
+    .door-card.free{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.3);color:#22c55e}
+    .door-card.occupied{background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3);color:#ef4444;cursor:not-allowed}
+    .door-card.scheduled{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3);color:#f59e0b}
     .door-card.selected{box-shadow:0 0 0 2.5px var(--text)}
-    .door-card.outbound{background:var(--bg2);color:var(--text3);cursor:not-allowed;opacity:.5}
+    .door-card.outbound{background:var(--bg3);color:var(--text3);cursor:not-allowed;opacity:.4}
     .door-name{font-weight:700;font-size:13px;margin-bottom:3px}
     .door-type{font-size:10px;opacity:.8;margin-bottom:3px}
     .door-status{font-size:10px;font-weight:600}
     .door-truck{font-size:10px;margin-top:3px;opacity:.75}
-    .dock-conflict{background:var(--red-fill);border:1.5px solid var(--red-bar);border-radius:var(--r);padding:12px 14px;margin-top:10px;font-size:13px;color:var(--red-text);display:none}
+    .dock-conflict{background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.3);border-radius:var(--r);padding:12px 14px;margin-top:10px;font-size:13px;color:#ef4444;display:none}
     .dock-conflict strong{font-weight:600}
-    .yard-zone{background:var(--amber-fill);border:0.5px solid var(--amber-bar);border-radius:var(--r);padding:10px 14px;margin-top:8px;font-size:12px;color:var(--amber-text);display:none}
+    .yard-zone{background:rgba(245,158,11,.08);border:0.5px solid rgba(245,158,11,.3);border-radius:var(--r);padding:10px 14px;margin-top:8px;font-size:12px;color:#f59e0b;display:none}
 
     /* Vendor dropdown */
-    .vendor-select{width:100%;padding:8px 11px;font-size:13px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);outline:none}
+    .vendor-select{width:100%;padding:8px 11px;font-size:13px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);outline:none}
 
     /* Search table */
     .search-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:11px}
     .search-table th{font-size:11px;color:var(--text2);text-align:left;padding:6px 9px;border-bottom:0.5px solid var(--border2);font-weight:500}
     .search-table td{padding:7px 9px;border-bottom:0.5px solid var(--border)}
     .search-table tr:last-child td{border-bottom:none}
-    .sr-active td{background:var(--green-fill);color:var(--green-text);font-weight:500}
-    .sr-qi td{background:var(--amber-fill);color:var(--amber-text);font-weight:500}
-    .sr-cold td{background:var(--cold-fill);color:var(--cold-text);font-weight:500}
-    .sr-expiry td{background:var(--purple-fill);color:var(--purple-text);font-weight:500}
+    .sr-active td{background:rgba(34,197,94,.08);color:#22c55e;font-weight:500}
+    .sr-qi td{background:rgba(245,158,11,.08);color:#f59e0b;font-weight:500}
+    .sr-cold td{background:rgba(45,212,191,.08);color:#2dd4bf;font-weight:500}
+    .sr-expiry td{background:rgba(167,139,250,.08);color:#a78bfa;font-weight:500}
     .sr-blocked td{opacity:.4;text-decoration:line-through}
     .chk{color:var(--green-text);font-weight:600}
 
@@ -151,7 +148,7 @@
     /* Summary */
     .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px}
     @media(max-width:500px){.sum-grid{grid-template-columns:1fr}}
-    .sum-item{background:var(--bg2);border-radius:var(--r);padding:11px 13px}
+    .sum-item{background:var(--bg3);border-radius:var(--r);padding:11px 13px}
     .sum-lbl{font-size:11px;color:var(--text3);margin-bottom:2px}
     .sum-val{font-size:13px;font-weight:500}
 
@@ -160,7 +157,7 @@
     .dtree-title{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
     .dt-node{display:flex;gap:8px;margin-bottom:4px}
     .dt-box{padding:6px 11px;border-radius:var(--r);font-size:12px;border:0.5px solid var(--border2);flex:1}
-    .dt-box.dec{background:var(--bg2);font-weight:500}
+    .dt-box.dec{background:var(--bg3);font-weight:500}
     .dt-box.og{background:var(--green-fill);color:var(--green-text);border-color:var(--green-bar)}
     .dt-box.oa{background:var(--amber-fill);color:var(--amber-text);border-color:var(--amber-bar)}
     .dt-box.or{background:var(--red-fill);color:var(--red-text);border-color:var(--red-bar)}
@@ -187,33 +184,44 @@
     .banner{border-radius:var(--rl);padding:16px 20px;text-align:center;margin-bottom:16px}
     .banner h2{font-size:17px;font-weight:600;margin-bottom:3px}
     .banner p{font-size:13px;color:var(--text2);margin-top:4px}
-    .banner.green{background:var(--green-fill);border:0.5px solid var(--green-bar)}
-    .banner.green h2{color:var(--green-text)}
-    .banner.amber{background:var(--amber-fill);border:0.5px solid var(--amber-bar)}
-    .banner.amber h2{color:var(--amber-text)}
-    .banner.cold{background:var(--cold-fill);border:0.5px solid var(--cold-bar)}
-    .banner.cold h2{color:var(--cold-text)}
-    .banner.purple{background:var(--purple-fill);border:0.5px solid var(--purple-bar)}
-    .banner.purple h2{color:var(--purple-text)}
-    .banner.red{background:var(--red-fill);border:0.5px solid var(--red-bar)}
-    .banner.red h2{color:var(--red-text)}
+    .banner.green{background:rgba(34,197,94,.08);border:0.5px solid rgba(34,197,94,.3)}
+    .banner.green h2{color:#22c55e}
+    .banner.amber{background:rgba(245,158,11,.08);border:0.5px solid rgba(245,158,11,.3)}
+    .banner.amber h2{color:#f59e0b}
+    .banner.cold{background:rgba(45,212,191,.08);border:0.5px solid rgba(45,212,191,.3)}
+    .banner.cold h2{color:#2dd4bf}
+    .banner.purple{background:rgba(167,139,250,.08);border:0.5px solid rgba(167,139,250,.3)}
+    .banner.purple h2{color:#a78bfa}
+    .banner.red{background:rgba(239,68,68,.08);border:0.5px solid rgba(239,68,68,.3)}
+    .banner.red h2{color:#ef4444}
 
     /* Buttons */
     .btn-row{display:flex;gap:9px;margin-top:20px;align-items:center}
-    .btn{padding:9px 18px;font-size:13px;font-weight:500;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);cursor:pointer;transition:background .15s,transform .1s}
+    .btn{padding:9px 18px;font-size:13px;font-weight:500;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg3);color:var(--text);cursor:pointer;transition:background .15s,transform .1s}
     .btn:hover{background:var(--bg2)}
     .btn:active{transform:scale(.98)}
-    .btn-p{background:var(--text);color:var(--bg);border-color:var(--text);flex:1;padding:11px;font-size:14px}
-    .btn-p:hover{opacity:.88;background:var(--text)}
+    .btn-p{background:var(--accent);color:#0f1117;border-color:var(--accent);flex:1;padding:11px;font-size:14px;font-weight:600}
+    .btn-p:hover{opacity:.88;background:var(--accent)}
 
     .sec-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;font-weight:500}
     .mono{font-family:"SF Mono","Fira Code",monospace}
     @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
-    footer{text-align:center;font-size:12px;color:var(--text3);margin-top:36px}
-    footer a{color:inherit}
+    footer{border-top:0.5px solid rgba(255,255,255,.07);padding:20px 32px;text-align:center;font-size:12px;color:var(--text3);margin-top:36px}
+    footer a{color:var(--text3);text-decoration:none}
+  footer a:hover{color:var(--text2)}
   </style>
 </head>
 <body>
+
+<nav style="padding:14px 32px;border-bottom:0.5px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(15,17,23,.92);backdrop-filter:blur(12px);z-index:100">
+  <div style="display:flex;align-items:center;gap:12px">
+    <a href="index.html" style="font-size:12px;color:#5c5f75;text-decoration:none;transition:color .15s" onmouseover="this.style.color='#9496a8'" onmouseout="this.style.color='#5c5f75'">← Portfolio</a>
+    <div style="width:1px;height:14px;background:rgba(255,255,255,.13)"></div>
+    <span style="font-size:14px;font-weight:600">GR to Putaway Simulator</span>
+    <span style="font-size:10px;background:rgba(45,212,191,.1);color:#5eead4;border:0.5px solid rgba(45,212,191,.25);border-radius:99px;padding:2px 8px;font-weight:500">SAP EWM · V4</span>
+  </div>
+</nav>
+
 <div class="wrap">
 
   <header style="margin-bottom:16px">
@@ -243,9 +251,9 @@
   <div class="card" id="card"></div>
 
   <footer>
-    SAP EWM GR to Putaway Simulator V4 &mdash;
+    GR to Putaway Simulator V4 — SAP EWM Supply Chain Portfolio &mdash;
     Kaushika Naik Ramavatu · MS Technology Management, UIUC Gies ·
-    <a href="https://kaushikanaikr.substack.com">The Flow of Things</a>
+    <a href="https://kaushikanaikr.substack.com" style="color:inherit">The Flow of Things</a>
   </footer>
 </div>
 
