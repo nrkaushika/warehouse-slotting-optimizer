@@ -2,7 +2,7 @@
 
 An interactive supply chain portfolio built to demonstrate applied SAP Extended Warehouse Management (EWM) knowledge — not just the acronym on a resume.
 
-**[Portfolio Home →](https://nrkaushika.github.io/warehouse-slotting-optimizer)**
+**[Portfolio Home →](https://nrkaushika.github.io/supply-chain-portfolio)**
 
 ---
 
@@ -10,9 +10,9 @@ An interactive supply chain portfolio built to demonstrate applied SAP Extended 
 
 | Tool | Description | Link |
 |---|---|---|
-| Warehouse Slotting Optimizer | Score SKUs by velocity, weight, and cold chain — assign optimal bin zones | [Open](https://nrkaushika.github.io/warehouse-slotting-optimizer/slotting-optimizer.html) |
-| GR to Putaway Simulator V4 | Full inbound delivery flow — 6 scenarios, dock scheduling, decision tree | [Open](https://nrkaushika.github.io/warehouse-slotting-optimizer/ewm-gr-putaway-simulator-v4.html) |
-| Pharma Supply Chain KPI Dashboard | 12 months of simulated pharma KPI data — OTIF, fill rate, MAPE, and more | [Open](https://nrkaushika.github.io/warehouse-slotting-optimizer/scm-kpi-dashboard.html) |
+| Warehouse Slotting Optimizer | Score SKUs by velocity, weight, and cold chain — assign optimal bin zones | [Open](https://nrkaushika.github.io/supply-chain-portfolio/slotting-optimizer.html) |
+| GR to Putaway Simulator V4 | Full inbound delivery flow — 6 scenarios, dock scheduling, decision tree | [Open](https://nrkaushika.github.io/supply-chain-portfolio/ewm-gr-putaway-simulator-v4.html) |
+| Pharma Supply Chain KPI Dashboard | 12 months of simulated pharma KPI data — OTIF, fill rate, MAPE, and more | [Open](https://nrkaushika.github.io/supply-chain-portfolio/scm-kpi-dashboard.html) |
 
 ---
 
@@ -68,8 +68,8 @@ Walk through a complete Goods Receipt (GR) to putaway flow in SAP EWM. Every ste
 - Batch number tracked across all 6 steps with visual tracker
 
 **Previous versions kept for iteration reference:**
-- [V3](https://nrkaushika.github.io/warehouse-slotting-optimizer/ewm-gr-putaway-simulator-v3.html) — scenario selector, FEFO routing, batch traceability, decision tree
-- [V2](https://nrkaushika.github.io/warehouse-slotting-optimizer/ewm-gr-putaway-simulator.html) — quality hold routing, auto weight calculation, short delivery
+- [V3](https://nrkaushika.github.io/supply-chain-portfolio/ewm-gr-putaway-simulator-v3.html) — scenario selector, FEFO routing, batch traceability, decision tree
+- [V2](https://nrkaushika.github.io/supply-chain-portfolio/ewm-gr-putaway-simulator.html) — quality hold routing, auto weight calculation, short delivery
 
 ---
 
@@ -124,4 +124,4 @@ Pure HTML + CSS + vanilla JavaScript. No frameworks, no libraries, no backend. S
 
 Built by **Kaushika Naik Ramavatu** — MS Technology Management, Gies College of Business, University of Illinois Urbana-Champaign (UIUC). SAP S/4HANA Supply Chain Execution and EWM coursework. Writing about supply chain operations at [The Flow of Things](https://kaushikanaikr.substack.com).
 
-[LinkedIn](https://linkedin.com/in/kaushika-naik-ramavatu) · [Substack](https://kaushikanaikr.substack.com) · [Portfolio](https://nrkaushika.github.io/warehouse-slotting-optimizer)
+[LinkedIn](https://linkedin.com/in/kaushika-naik-ramavatu) · [Substack](https://kaushikanaikr.substack.com) · [Portfolio](https://nrkaushika.github.io/supply-chain-portfolio)
