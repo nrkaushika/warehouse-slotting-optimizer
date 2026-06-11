@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pharma Supply Chain KPI Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --bg2: #1a1d27;
+      --bg3: #222638;
+      --bg4: #2a2f45;
+      --text: #e8e9f0;
+      --text2: #9496a8;
+      --text3: #5c5f75;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.13);
+      --green: #22c55e;
+      --green-dim: #166534;
+      --green-fill: rgba(34,197,94,0.1);
+      --amber: #f59e0b;
+      --amber-dim: #92400e;
+      --amber-fill: rgba(245,158,11,0.1);
+      --red: #ef4444;
+      --red-dim: #7f1d1d;
+      --red-fill: rgba(239,68,68,0.1);
+      --blue: #60a5fa;
+      --blue-fill: rgba(96,165,250,0.1);
+      --purple: #a78bfa;
+      --teal: #2dd4bf;
+      --accent: #6366f1;
+      --accent2: #818cf8;
+      --radius: 8px;
+      --radius-lg: 14px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* Header */
+    .header {
+      background: var(--bg2);
+      border-bottom: 0.5px solid var(--border2);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    .header-left p {
+      font-size: 12px;
+      color: var(--text2);
+      margin-top: 2px;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .month-selector {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg3);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 6px 12px;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .month-selector select {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+    .month-selector select option { background: var(--bg2); }
+    .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--green);
+      background: var(--green-fill);
+      border: 0.5px solid var(--green-dim);
+      border-radius: 99px;
+      padding: 4px 10px;
+    }
+    .live-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* Main layout */
+    .main { padding: 24px 32px 48px; max-width: 1400px; margin: 0 auto; }
+
+    /* Alert banner */
+    .alert-banner {
+      background: var(--amber-fill);
+      border: 0.5px solid var(--amber-dim);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      font-size: 13px;
+      color: var(--amber);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .alert-banner.hidden { display: none; }
+
+    /* KPI cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 600px)  { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .kpi-card {
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .kpi-card:hover { border-color: var(--border2); }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+    .kpi-card.green::before { background: var(--green); }
+    .kpi-card.amber::before { background: var(--amber); }
+    .kpi-card.red::before   { background: var(--red); }
+
+    .kpi-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; font-weight: 500; }
+    .kpi-value { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; margin-bottom: 6px; }
+    .kpi-card.green .kpi-value { color: var(--green); }
+    .kpi-card.amber .kpi-value { color: var(--amber); }
+    .kpi-card.red   .kpi-value  { color: var(--red); }
+    .kpi-meta { display: flex; align-items: center; justify-content: space-between; }
+    .kpi-target { font-size: 11px; color: var(--text3); }
+    .kpi-delta {
+      font-size: 11px; font-weight: 500;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .kpi-delta.up   { background: var(--green-fill); color: var(--green); }
+    .kpi-delta.down { background: var(--red-fill);   color: var(--red); }
+    .kpi-delta.flat { background: var(--amber-fill); color: var(--amber); }
+
+    /* Charts section */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+
+    .chart-card {
+      background: var(--bg2);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+    }
+    .chart-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+    .chart-sub { font-size: 12px; color: var(--text2); }
+    .chart-legend {
+      display: flex; gap: 14px; flex-wrap: wrap;
+    }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* SVG charts */
+    .chart-svg { width: 100%; overflow: visible; }
+
+    /* Bottom grid */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 900px) { .bottom-grid { grid-template-columns: 1fr; } }
+
+    /* Events table */
+    .event-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 0.5px solid var(--border);
+      font-size: 13px;
+    }
+    .event-row:last-child { border-bottom: none; }
+    .event-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      flex-shrink: 0; margin-top: 4px;
+    }
+    .event-content { flex: 1; }
+    .event-title { font-weight: 500; margin-bottom: 2px; }
+    .event-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+    .event-month { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+    /* Supplier table */
+    .supplier-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .supplier-table th {
+      font-size: 11px; color: var(--text3); text-align: left;
+      padding: 0 8px 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .supplier-table td { padding: 8px; border-bottom: 0.5px solid var(--border); }
+    .supplier-table tr:last-child td { border-bottom: none; }
+    .perf-bar {
+      height: 6px; border-radius: 3px; background: var(--bg3);
+      overflow: hidden; margin-top: 4px;
+    }
+    .perf-fill { height: 100%; border-radius: 3px; }
+
+    /* Section label */
+    .section-label {
+      font-size: 11px; color: var(--text3); text-transform: uppercase;
+      letter-spacing: 0.06em; margin-bottom: 14px; font-weight: 500;
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: absolute; background: var(--bg4);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius); padding: 8px 12px;
+      font-size: 12px; pointer-events: none;
+      z-index: 50; min-width: 120px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      display: none;
+    }
+    .tooltip-label { color: var(--text2); margin-bottom: 4px; }
+    .tooltip-val { font-weight: 600; font-size: 14px; }
+
+    footer {
+      text-align: center; font-size: 12px;
+      color: var(--text3); margin-top: 40px; padding-bottom: 24px;
+    }
+    footer a { color: inherit; }
+
+    .mono { font-family: "SF Mono", "Fira Code", monospace; }
+  </style>
+</head>
+<body>
+
+<div class="tooltip" id="tooltip">
+  <div class="tooltip-label" id="tt-label"></div>
+  <div class="tooltip-val" id="tt-val"></div>
+</div>
+
+<header class="header">
+  <div class="header-left">
+    <h1>Supply Chain KPI Dashboard</h1>
+    <p>Pharma &amp; Medical Devices — Simulated 2025 Operations Data</p>
+  </div>
+  <div class="header-right">
+    <div class="month-selector">
+      <span style="color:var(--text2);font-size:12px">Viewing</span>
+      <select id="month-select" onchange="updateMonth()">
+        <option value="0">Jan 2025</option>
+        <option value="1">Feb 2025</option>
+        <option value="2">Mar 2025</option>
+        <option value="3">Apr 2025</option>
+        <option value="4">May 2025</option>
+        <option value="5">Jun 2025</option>
+        <option value="6">Jul 2025</option>
+        <option value="7">Aug 2025</option>
+        <option value="8">Sep 2025</option>
+        <option value="9">Oct 2025</option>
+        <option value="10">Nov 2025</option>
+        <option value="11" selected>Dec 2025</option>
+      </select>
+    </div>
+    <div class="live-badge"><div class="live-dot"></div>Live sim</div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="alert-banner" id="alert-banner"></div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">OTIF & Fill Rate — 12 Month Trend</div>
+          <div class="chart-sub">On Time In Full vs Order Fill Rate vs targets</div>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div>OTIF</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#2dd4bf"></div>Fill Rate</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.15);border:1px dashed rgba(255,255,255,0.3)"></div>Target (95%)</div>
+        </div>
+      </div>
+      <svg class="chart-svg" id="line-chart" height="200"></svg>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Inventory Turnover</div>
+          <div class="chart-sub">Times per month — target ≥ 8×</div>
+        </div>
+      </div>
+      <svg class="chart-svg" id="bar-chart" height="200"></svg>
+    </div>
+  </div>
+
+  <div class="bottom-grid">
+    <!-- Supply chain events -->
+    <div class="chart-card">
+      <div class="section-label">Supply chain events</div>
+      <div id="events-list"></div>
+    </div>
+
+    <!-- Supplier performance -->
+    <div class="chart-card">
+      <div class="section-label">Supplier OTIF performance</div>
+      <table class="supplier-table">
+        <thead><tr><th>Supplier</th><th>OTIF</th><th>Trend</th></tr></thead>
+        <tbody id="supplier-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- KPI definitions -->
+    <div class="chart-card">
+      <div class="section-label">KPI definitions — SAP context</div>
+      <div style="display:flex;flex-direction:column;gap:10px" id="kpi-defs"></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Pharma Supply Chain KPI Dashboard — Simulated 2025 Operations Data &mdash;
+  Kaushika Naik Ramavatu &middot; MS Technology Management, UIUC Gies &middot;
+  <a href="https://kaushikanaikr.substack.com">The Flow of Things</a>
+</footer>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// 12 months of simulated pharma supply chain data
+// Story: Feb supplier delay → Apr flu season spike → Jul new vendor → Oct forecast miss
+const DATA = [
+  { otif:94.2, fill:96.1, invTurn:9.1, dos:38, mape:8.2, cycleTime:2.1 }, // Jan — normal
+  { otif:81.4, fill:88.3, invTurn:7.8, dos:44, mape:11.4,cycleTime:3.4 }, // Feb — supplier delay
+  { otif:87.6, fill:92.1, invTurn:8.3, dos:41, mape:9.8, cycleTime:2.8 }, // Mar — recovering
+  { otif:85.1, fill:90.4, invTurn:7.2, dos:52, mape:14.1,cycleTime:3.1 }, // Apr — flu spike
+  { otif:88.9, fill:93.2, invTurn:8.0, dos:46, mape:10.2,cycleTime:2.6 }, // May — stabilizing
+  { otif:91.3, fill:94.7, invTurn:8.6, dos:42, mape:8.9, cycleTime:2.3 }, // Jun — improving
+  { otif:95.8, fill:97.2, invTurn:9.4, dos:37, mape:7.1, cycleTime:1.9 }, // Jul — new vendor
+  { otif:96.1, fill:97.8, invTurn:9.7, dos:35, mape:6.8, cycleTime:1.8 }, // Aug — peak perf
+  { otif:95.4, fill:96.9, invTurn:9.3, dos:38, mape:7.4, cycleTime:2.0 }, // Sep — stable
+  { otif:89.2, fill:91.6, invTurn:6.8, dos:61, mape:18.3,cycleTime:2.9 }, // Oct — forecast miss
+  { otif:91.8, fill:93.4, invTurn:7.9, dos:49, mape:11.2,cycleTime:2.5 }, // Nov — correcting
+  { otif:93.6, fill:95.1, invTurn:8.8, dos:40, mape:8.6, cycleTime:2.2 }, // Dec — year-end
+];
+
+const TARGETS = { otif:95, fill:95, invTurn:8, dos:45, mape:10, cycleTime:2.5 };
+
+const EVENTS = [
+  { month:'Feb 2025', title:'Supplier delay — Vendor A', desc:'API supplier delayed shipment by 12 days. OTIF dropped to 81.4%, fill rate to 88.3%. Emergency sourcing activated.', color:'#ef4444' },
+  { month:'Apr 2025', title:'Flu season demand spike', desc:'Unexpected +34% demand surge for antivirals. Inventory depleted faster than forecast, DoS rose to 52 days (overcompensation).', color:'#f59e0b' },
+  { month:'Jul 2025', title:'New vendor onboarded', desc:'Secondary supplier qualified and activated. OTIF improved to 95.8% — first time hitting target since Jan.', color:'#22c55e' },
+  { month:'Oct 2025', title:'Forecast miss — overstock', desc:'Demand planning error caused 18.3% MAPE. Inventory turnover dropped to 6.8×, DoS rose to 61 days. Corrective action: S&OP review initiated.', color:'#ef4444' },
+];
+
+const SUPPLIERS = [
+  { name:'Vendor A (API)',    otif:78.4, prev:85.2 },
+  { name:'Vendor B (Pkg)',    otif:94.1, prev:91.3 },
+  { name:'Vendor C (New)',    otif:96.8, prev:93.4 },
+  { name:'Vendor D (Cold)',   otif:91.2, prev:90.8 },
+  { name:'Vendor E (Device)', otif:88.6, prev:92.1 },
+];
+
+const KPI_DEFS = [
+  { name:'OTIF', def:'% of orders delivered On Time and In Full. Gold standard of supply chain performance. SAP: tracked via delivery reliability reports in EWM/SD.' },
+  { name:'Fill Rate', def:'% of order quantity fulfilled from available stock. Below 95% = stockout risk. SAP: goods issue confirmation vs order quantity.' },
+  { name:'Inv. Turnover', def:'How many times inventory cycles per period. Higher = leaner. SAP: COGS ÷ average inventory value in MM-IM.' },
+  { name:'Days of Supply', def:'Days of stock on hand at current consumption rate. Too high = overstock. Too low = stockout risk. SAP: MD04 stock/requirements list.' },
+  { name:'MAPE', def:'Mean Absolute % Error — forecast accuracy. <10% is excellent. SAP: compared in APO/IBP demand planning module.' },
+  { name:'Cycle Time', def:'Days from order creation to goods issue. Lower = faster fulfillment. SAP: delivery processing time in SD/EWM.' },
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let currentMonth = 11;
+
+// ─── KPI CARDS ───────────────────────────────────────────────────────────────
+function statusClass(key, val) {
+  const t = TARGETS[key];
+  if (key === 'mape' || key === 'cycleTime' || key === 'dos') {
+    // lower is better
+    if (val <= t * 0.85) return 'green';
+    if (val <= t) return 'green';
+    if (val <= t * 1.2) return 'amber';
+    return 'red';
+  }
+  if (val >= t) return 'green';
+  if (val >= t * 0.9) return 'amber';
+  return 'red';
+}
+
+function deltaStr(key, val, prev) {
+  const diff = val - prev;
+  const better = (key === 'mape' || key === 'cycleTime' || key === 'dos') ? diff < 0 : diff > 0;
+  const cls = Math.abs(diff) < 0.1 ? 'flat' : better ? 'up' : 'down';
+  const sign = diff > 0 ? '+' : '';
+  const unit = key === 'cycleTime' ? 'd' : key === 'dos' ? 'd' : key === 'invTurn' ? '×' : '%';
+  return `<span class="kpi-delta ${cls}">${sign}${diff.toFixed(1)}${unit}</span>`;
+}
+
+function renderKPIs() {
+  const d = DATA[currentMonth];
+  const prev = DATA[Math.max(0, currentMonth - 1)];
+  const cards = [
+    { key:'otif',      label:'OTIF',              val:`${d.otif}%`,       raw:d.otif,      target:'Target ≥95%' },
+    { key:'fill',      label:'Fill Rate',          val:`${d.fill}%`,       raw:d.fill,      target:'Target ≥95%' },
+    { key:'invTurn',   label:'Inv. Turnover',      val:`${d.invTurn}×`,    raw:d.invTurn,   target:'Target ≥8×' },
+    { key:'dos',       label:'Days of Supply',     val:`${d.dos}d`,        raw:d.dos,       target:'Target ≤45d' },
+    { key:'mape',      label:'Forecast Error',     val:`${d.mape}%`,       raw:d.mape,      target:'Target <10%' },
+    { key:'cycleTime', label:'Order Cycle Time',   val:`${d.cycleTime}d`,  raw:d.cycleTime, target:'Target ≤2.5d' },
+  ];
+  document.getElementById('kpi-grid').innerHTML = cards.map(c => `
+    <div class="kpi-card ${statusClass(c.key, c.raw)}">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${c.val}</div>
+      <div class="kpi-meta">
+        <span class="kpi-target">${c.target}</span>
+        ${deltaStr(c.key, d[c.key], prev[c.key])}
+      </div>
+    </div>`).join('');
+
+  // Alert banner
+  const alerts = [];
+  if (d.otif < TARGETS.otif) alerts.push(`OTIF at ${d.otif}% — below 95% target`);
+  if (d.fill < TARGETS.fill) alerts.push(`Fill rate at ${d.fill}% — stockout risk`);
+  if (d.mape > TARGETS.mape) alerts.push(`Forecast error at ${d.mape}% — demand plan review needed`);
+  if (d.dos > TARGETS.dos) alerts.push(`Days of supply at ${d.dos}d — potential overstock`);
+  const banner = document.getElementById('alert-banner');
+  if (alerts.length > 0) {
+    banner.classList.remove('hidden');
+    banner.innerHTML = `⚠ ${MONTHS[currentMonth]}: ${alerts.join(' · ')}`;
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+// ─── LINE CHART ──────────────────────────────────────────────────────────────
+function renderLineChart() {
+  const svg = document.getElementById('line-chart');
+  const W = svg.parentElement.clientWidth - 48;
+  const H = 200;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const pad = { t:10, r:10, b:30, l:36 };
+  const cw = W - pad.l - pad.r;
+  const ch = H - pad.t - pad.b;
+  const min = 75, max = 100;
+
+  function x(i) { return pad.l + (i / 11) * cw; }
+  function y(v) { return pad.t + ch - ((v - min) / (max - min)) * ch; }
+
+  let html = '';
+
+  // Target line
+  const ty = y(95);
+  html += `<line x1="${pad.l}" y1="${ty}" x2="${pad.l+cw}" y2="${ty}" stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="4,4"/>`;
+  html += `<text x="${pad.l+cw+4}" y="${ty+4}" font-size="10" fill="rgba(255,255,255,0.3)">95%</text>`;
+
+  // Grid lines
+  [80,85,90,95,100].forEach(v => {
+    const gy = y(v);
+    html += `<line x1="${pad.l}" y1="${gy}" x2="${pad.l+cw}" y2="${gy}" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>`;
+    html += `<text x="${pad.l-6}" y="${gy+4}" font-size="10" fill="rgba(255,255,255,0.25)" text-anchor="end">${v}</text>`;
+  });
+
+  // OTIF area fill
+  const otifPts = DATA.map((d,i) => `${x(i)},${y(d.otif)}`).join(' ');
+  const otifArea = `${x(0)},${H-pad.b} ` + DATA.map((d,i) => `${x(i)},${y(d.otif)}`).join(' ') + ` ${x(11)},${H-pad.b}`;
+  html += `<polygon points="${otifArea}" fill="rgba(99,102,241,0.08)"/>`;
+
+  // Fill rate line
+  const fillPts = DATA.map((d,i) => `${x(i)},${y(d.fill)}`).join(' ');
+  html += `<polyline points="${fillPts}" fill="none" stroke="#2dd4bf" stroke-width="1.5" stroke-linejoin="round"/>`;
+
+  // OTIF line
+  html += `<polyline points="${otifPts}" fill="none" stroke="#6366f1" stroke-width="2" stroke-linejoin="round"/>`;
+
+  // Current month highlight
+  const cx2 = x(currentMonth);
+  html += `<line x1="${cx2}" y1="${pad.t}" x2="${cx2}" y2="${H-pad.b}" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>`;
+
+  // Dots
+  DATA.forEach((d, i) => {
+    const active = i === currentMonth;
+    html += `<circle cx="${x(i)}" cy="${y(d.otif)}" r="${active?5:3}" fill="${active?'#6366f1':'#6366f1'}" stroke="${active?'#fff':'none'}" stroke-width="1.5"
+      onmouseenter="showTT(event,'${MONTHS[i]}','OTIF: ${d.otif}%')"
+      onmouseleave="hideTT()" style="cursor:pointer"/>`;
+    html += `<circle cx="${x(i)}" cy="${y(d.fill)}" r="${active?5:3}" fill="${active?'#2dd4bf':'#2dd4bf'}" stroke="${active?'#fff':'none'}" stroke-width="1.5"
+      onmouseenter="showTT(event,'${MONTHS[i]}','Fill Rate: ${d.fill}%')"
+      onmouseleave="hideTT()" style="cursor:pointer"/>`;
+  });
+
+  // X labels
+  MONTHS.forEach((m, i) => {
+    html += `<text x="${x(i)}" y="${H-pad.b+16}" font-size="10" fill="${i===currentMonth?'rgba(255,255,255,0.8)':'rgba(255,255,255,0.3)'}" text-anchor="middle" font-weight="${i===currentMonth?600:400}">${m}</text>`;
+  });
+
+  svg.innerHTML = html;
+}
+
+// ─── BAR CHART ───────────────────────────────────────────────────────────────
+function renderBarChart() {
+  const svg = document.getElementById('bar-chart');
+  const W = svg.parentElement.clientWidth - 48;
+  const H = 200;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  const pad = { t:10, r:10, b:30, l:30 };
+  const cw = W - pad.l - pad.r;
+  const ch = H - pad.t - pad.b;
+  const min = 5, max = 11;
+  const bw = (cw / 12) * 0.6;
+
+  function x(i) { return pad.l + (i / 12) * cw + (cw/12)*0.2; }
+  function barH(v) { return ((v - min) / (max - min)) * ch; }
+
+  let html = '';
+
+  // Target line at 8
+  const ty = pad.t + ch - ((8 - min) / (max - min)) * ch;
+  html += `<line x1="${pad.l}" y1="${ty}" x2="${pad.l+cw}" y2="${ty}" stroke="${'#f59e0b'}" stroke-width="1" stroke-dasharray="3,3" opacity="0.5"/>`;
+  html += `<text x="${pad.l+cw+4}" y="${ty+4}" font-size="10" fill="#f59e0b" opacity="0.7">8×</text>`;
+
+  DATA.forEach((d, i) => {
+    const bh = barH(d.invTurn);
+    const bx = x(i);
+    const by = pad.t + ch - bh;
+    const active = i === currentMonth;
+    const col = d.invTurn >= 8 ? '#6366f1' : '#ef4444';
+    const opacity = active ? 1 : 0.45;
+
+    html += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}"
+      rx="3" fill="${col}" opacity="${opacity}"
+      onmouseenter="showTT(event,'${MONTHS[i]}','Inv. Turnover: ${d.invTurn}×')"
+      onmouseleave="hideTT()" style="cursor:pointer"/>`;
+
+    if (active) {
+      html += `<text x="${bx + bw/2}" y="${by - 5}" font-size="10" fill="${col}" text-anchor="middle" font-weight="600">${d.invTurn}×</text>`;
+    }
+
+    html += `<text x="${bx + bw/2}" y="${H-pad.b+14}" font-size="10" fill="${active?'rgba(255,255,255,0.8)':'rgba(255,255,255,0.3)'}" text-anchor="middle">${MONTHS[i].slice(0,1)}</text>`;
+  });
+
+  svg.innerHTML = html;
+}
+
+// ─── EVENTS ──────────────────────────────────────────────────────────────────
+function renderEvents() {
+  document.getElementById('events-list').innerHTML = EVENTS.map(e => `
+    <div class="event-row">
+      <div class="event-dot" style="background:${e.color}"></div>
+      <div class="event-content">
+        <div class="event-title">${e.title}</div>
+        <div class="event-desc">${e.desc}</div>
+        <div class="event-month">${e.month}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ─── SUPPLIERS ───────────────────────────────────────────────────────────────
+function renderSuppliers() {
+  document.getElementById('supplier-tbody').innerHTML = SUPPLIERS.map(s => {
+    const trend = s.otif > s.prev ? `<span style="color:#22c55e;font-size:12px">↑ ${(s.otif-s.prev).toFixed(1)}%</span>` :
+                  s.otif < s.prev ? `<span style="color:#ef4444;font-size:12px">↓ ${(s.prev-s.otif).toFixed(1)}%</span>` :
+                  `<span style="color:#f59e0b;font-size:12px">→</span>`;
+    const col = s.otif >= 95 ? '#6366f1' : s.otif >= 88 ? '#f59e0b' : '#ef4444';
+    return `<tr>
+      <td style="color:var(--text2)">${s.name}</td>
+      <td>
+        <span style="font-weight:600;color:${col}">${s.otif}%</span>
+        <div class="perf-bar"><div class="perf-fill" style="width:${s.otif}%;background:${col}"></div></div>
+      </td>
+      <td>${trend}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── KPI DEFS ─────────────────────────────────────────────────────────────────
+function renderDefs() {
+  document.getElementById('kpi-defs').innerHTML = KPI_DEFS.map(k => `
+    <div style="padding-bottom:10px;border-bottom:0.5px solid var(--border)">
+      <div style="font-size:12px;font-weight:600;color:var(--accent2);margin-bottom:3px">${k.name}</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.6">${k.def}</div>
+    </div>`).join('');
+}
+
+// ─── TOOLTIP ──────────────────────────────────────────────────────────────────
+function showTT(e, label, val) {
+  const tt = document.getElementById('tooltip');
+  tt.style.display = 'block';
+  tt.style.left = (e.pageX + 12) + 'px';
+  tt.style.top  = (e.pageY - 20) + 'px';
+  document.getElementById('tt-label').textContent = label;
+  document.getElementById('tt-val').textContent = val;
+}
+function hideTT() { document.getElementById('tooltip').style.display = 'none'; }
+
+// ─── UPDATE ───────────────────────────────────────────────────────────────────
+function updateMonth() {
+  currentMonth = parseInt(document.getElementById('month-select').value);
+  renderKPIs();
+  renderLineChart();
+  renderBarChart();
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+function init() {
+  renderKPIs();
+  renderLineChart();
+  renderBarChart();
+  renderEvents();
+  renderSuppliers();
+  renderDefs();
+}
+
+window.addEventListener('resize', () => { renderLineChart(); renderBarChart(); });
+init();
+</script>
+</body>
+</html>
