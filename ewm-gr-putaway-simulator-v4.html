@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SAP EWM — GR to Putaway Simulator V4</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#fff;--bg2:#f5f4f0;--bg3:#eeede9;--text:#1a1a18;--text2:#5f5e5a;--text3:#888780;
+      --border:rgba(0,0,0,.12);--border2:rgba(0,0,0,.22);
+      --blue-fill:#E6F1FB;--blue-text:#0C447C;--blue-bar:#B5D4F4;
+      --green-fill:#EAF3DE;--green-text:#27500A;--green-bar:#C0DD97;
+      --amber-fill:#FAEEDA;--amber-text:#633806;--amber-bar:#FAC775;
+      --red-fill:#FDECEA;--red-text:#7F1D1D;--red-bar:#FBBFBF;
+      --cold-fill:#E0F2FE;--cold-text:#0C4A6E;--cold-bar:#7DD3FC;
+      --purple-fill:#F3E8FF;--purple-text:#6B21A8;--purple-bar:#C084FC;
+      --r:8px;--rl:14px
+    }
+    @media(prefers-color-scheme:dark){:root{
+      --bg:#1e1e1c;--bg2:#2a2a27;--bg3:#323230;--text:#e8e6de;--text2:#9c9a92;--text3:#6e6c66;
+      --border:rgba(255,255,255,.1);--border2:rgba(255,255,255,.2);
+      --blue-fill:#042C53;--blue-text:#B5D4F4;--blue-bar:#185FA5;
+      --green-fill:#173404;--green-text:#C0DD97;--green-bar:#3B6D11;
+      --amber-fill:#412402;--amber-text:#FAC775;--amber-bar:#854F0B;
+      --red-fill:#450A0A;--red-text:#FBBFBF;--red-bar:#7F1D1D;
+      --cold-fill:#082F49;--cold-text:#7DD3FC;--cold-bar:#0369A1;
+      --purple-fill:#2E1065;--purple-text:#C084FC;--purple-bar:#7E22CE;
+    }}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg3);color:var(--text);min-height:100vh;padding:24px 16px 60px}
+    .wrap{max-width:840px;margin:0 auto}
+    h1{font-size:20px;font-weight:600;margin-bottom:4px}
+    .subtitle{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:10px}
+    .badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
+    .badge{font-size:11px;font-weight:500;padding:2px 10px;border-radius:99px;background:var(--blue-fill);color:var(--blue-text)}
+    .badge.g{background:var(--green-fill);color:var(--green-text)}
+    .badge.a{background:var(--amber-fill);color:var(--amber-text)}
+    .badge.r{background:var(--red-fill);color:var(--red-text)}
+    .badge.c{background:var(--cold-fill);color:var(--cold-text)}
+    .badge.p{background:var(--purple-fill);color:var(--purple-text)}
+    .vtag{display:inline-block;font-size:10px;background:var(--blue-fill);color:var(--blue-text);border-radius:4px;padding:1px 6px;margin-left:8px;font-weight:600;vertical-align:middle}
+
+    /* Scenario bar */
+    .sc-bar{background:var(--bg);border:0.5px solid var(--border2);border-radius:var(--rl);padding:16px 18px;margin-bottom:18px}
+    .sc-bar h3{font-size:13px;font-weight:600;margin-bottom:10px}
+    .sc-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
+    @media(max-width:700px){.sc-grid{grid-template-columns:repeat(3,1fr)}}
+    .sc-btn{padding:9px 6px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;text-align:center;font-size:11px;font-weight:500;transition:all .15s;line-height:1.4}
+    .sc-btn:hover{border-color:var(--text3);color:var(--text)}
+    .sc-btn.active{border-color:var(--text);background:var(--text);color:var(--bg)}
+    .sc-icon{font-size:18px;display:block;margin-bottom:3px}
+
+    /* Progress */
+    .prog{display:flex;align-items:center;margin-bottom:18px}
+    .prog-step{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;cursor:pointer}
+    .prog-dot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;z-index:1;border:2px solid var(--border2);background:var(--bg2);color:var(--text3);transition:all .2s}
+    .prog-dot.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+    .prog-dot.done{background:var(--green-bar);color:var(--green-text);border-color:var(--green-bar)}
+    .prog-dot.warn{background:var(--amber-bar);color:var(--amber-text);border-color:var(--amber-bar)}
+    .prog-dot.cold{background:var(--cold-bar);color:var(--cold-text);border-color:var(--cold-bar)}
+    .prog-line{position:absolute;top:13px;left:50%;right:-50%;height:2px;background:var(--border2);z-index:0}
+    .prog-line.done{background:var(--green-bar)}
+    .prog-line.warn{background:var(--amber-bar)}
+    .prog-line.cold{background:var(--cold-bar)}
+    .prog-step:last-child .prog-line{display:none}
+    .prog-lbl{font-size:9px;color:var(--text3);margin-top:4px;text-align:center;max-width:60px;line-height:1.3}
+    .prog-lbl.active{color:var(--text);font-weight:500}
+    .prog-lbl.done{color:var(--green-text)}
+
+    /* Batch tracker */
+    .batch-bar{background:var(--purple-fill);border:0.5px solid var(--purple-bar);border-radius:var(--r);padding:9px 13px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--purple-text);flex-wrap:wrap}
+    .batch-bar strong{font-weight:600}
+    .batch-steps{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+    .b-tag{font-size:10px;padding:2px 7px;border-radius:99px;background:var(--purple-bar);color:var(--purple-text);font-weight:500;opacity:.35}
+    .b-tag.on{opacity:1}
+
+    /* Card */
+    .card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--rl);padding:24px 26px 20px;margin-bottom:14px}
+    .step-no{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+    .step-title{font-size:18px;font-weight:600;margin-bottom:5px}
+    .step-desc{font-size:13px;color:var(--text2);line-height:1.7}
+    .tx-badge{display:inline-flex;align-items:center;gap:5px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--r);padding:5px 11px;font-size:12px;color:var(--text2);margin-top:9px;font-family:monospace}
+    .tx-badge span{font-weight:600;color:var(--blue-text)}
+
+    /* Fields */
+    .fields{display:grid;gap:11px;margin-top:16px}
+    .frow{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+    @media(max-width:500px){.frow{grid-template-columns:1fr}}
+    .field label{font-size:12px;color:var(--text2);display:block;margin-bottom:4px;font-weight:500}
+    .field input,.field select{width:100%;padding:8px 11px;font-size:13px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);outline:none;transition:border-color .15s}
+    .field input:focus,.field select:focus{border-color:var(--blue-bar)}
+    .field input[readonly]{opacity:.6;cursor:default}
+    .field input.err,.field select.err{border-color:#ef4444}
+    .hint{font-size:11px;color:var(--text3);margin-top:3px}
+    .auto-tag{font-size:10px;background:var(--green-fill);color:var(--green-text);border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:500}
+    .batch-tag{font-size:10px;background:var(--purple-fill);color:var(--purple-text);border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:500}
+
+    /* Info boxes */
+    .info-box{background:var(--blue-fill);border:0.5px solid var(--blue-bar);border-radius:var(--r);padding:13px 15px;font-size:13px;color:var(--blue-text);line-height:1.7;margin-top:13px}
+    .warn-box{background:var(--amber-fill);border:0.5px solid var(--amber-bar);border-radius:var(--r);padding:13px 15px;font-size:13px;color:var(--amber-text);line-height:1.7;margin-top:13px}
+    .alert-box{background:var(--red-fill);border:0.5px solid var(--red-bar);border-radius:var(--r);padding:13px 15px;font-size:13px;color:var(--red-text);line-height:1.7;margin-top:13px}
+    .cold-box{background:var(--cold-fill);border:0.5px solid var(--cold-bar);border-radius:var(--r);padding:13px 15px;font-size:13px;color:var(--cold-text);line-height:1.7;margin-top:13px}
+    .purple-box{background:var(--purple-fill);border:0.5px solid var(--purple-bar);border-radius:var(--r);padding:13px 15px;font-size:13px;color:var(--purple-text);line-height:1.7;margin-top:13px}
+    .green-box{background:var(--green-fill);border:0.5px solid var(--green-bar);border-radius:var(--r);padding:13px 15px;font-size:13px;color:var(--green-text);line-height:1.7;margin-top:13px}
+    .info-box strong,.warn-box strong,.alert-box strong,.cold-box strong,.purple-box strong,.green-box strong{font-weight:600}
+
+    /* Dock status panel */
+    .dock-panel{margin-top:14px}
+    .dock-panel h4{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+    .door-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    @media(max-width:500px){.door-grid{grid-template-columns:repeat(2,1fr)}}
+    .door-card{border-radius:var(--r);padding:10px 12px;border:1.5px solid var(--border2);text-align:center;font-size:12px;cursor:pointer;transition:all .15s;position:relative}
+    .door-card.free{background:var(--green-fill);border-color:var(--green-bar);color:var(--green-text)}
+    .door-card.occupied{background:var(--red-fill);border-color:var(--red-bar);color:var(--red-text);cursor:not-allowed}
+    .door-card.scheduled{background:var(--amber-fill);border-color:var(--amber-bar);color:var(--amber-text)}
+    .door-card.selected{box-shadow:0 0 0 2.5px var(--text)}
+    .door-card.outbound{background:var(--bg2);color:var(--text3);cursor:not-allowed;opacity:.5}
+    .door-name{font-weight:700;font-size:13px;margin-bottom:3px}
+    .door-type{font-size:10px;opacity:.8;margin-bottom:3px}
+    .door-status{font-size:10px;font-weight:600}
+    .door-truck{font-size:10px;margin-top:3px;opacity:.75}
+    .dock-conflict{background:var(--red-fill);border:1.5px solid var(--red-bar);border-radius:var(--r);padding:12px 14px;margin-top:10px;font-size:13px;color:var(--red-text);display:none}
+    .dock-conflict strong{font-weight:600}
+    .yard-zone{background:var(--amber-fill);border:0.5px solid var(--amber-bar);border-radius:var(--r);padding:10px 14px;margin-top:8px;font-size:12px;color:var(--amber-text);display:none}
+
+    /* Vendor dropdown */
+    .vendor-select{width:100%;padding:8px 11px;font-size:13px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);outline:none}
+
+    /* Search table */
+    .search-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:11px}
+    .search-table th{font-size:11px;color:var(--text2);text-align:left;padding:6px 9px;border-bottom:0.5px solid var(--border2);font-weight:500}
+    .search-table td{padding:7px 9px;border-bottom:0.5px solid var(--border)}
+    .search-table tr:last-child td{border-bottom:none}
+    .sr-active td{background:var(--green-fill);color:var(--green-text);font-weight:500}
+    .sr-qi td{background:var(--amber-fill);color:var(--amber-text);font-weight:500}
+    .sr-cold td{background:var(--cold-fill);color:var(--cold-text);font-weight:500}
+    .sr-expiry td{background:var(--purple-fill);color:var(--purple-text);font-weight:500}
+    .sr-blocked td{opacity:.4;text-decoration:line-through}
+    .chk{color:var(--green-text);font-weight:600}
+
+    /* Bin grid */
+    .bin-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:11px}
+    .bin{height:40px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;border:0.5px solid var(--border)}
+    .bn{background:var(--bg2);color:var(--text3)}
+    .bs{background:var(--green-bar);color:var(--green-text);border-color:var(--green-bar)}
+    .ba{background:var(--blue-fill);color:var(--blue-text)}
+    .bq{background:var(--amber-fill);color:var(--amber-text);border-color:var(--amber-bar)}
+    .bc{background:var(--cold-fill);color:var(--cold-text);border-color:var(--cold-bar)}
+    .bx{background:var(--purple-fill);color:var(--purple-text);border-color:var(--purple-bar)}
+
+    /* Summary */
+    .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:16px}
+    @media(max-width:500px){.sum-grid{grid-template-columns:1fr}}
+    .sum-item{background:var(--bg2);border-radius:var(--r);padding:11px 13px}
+    .sum-lbl{font-size:11px;color:var(--text3);margin-bottom:2px}
+    .sum-val{font-size:13px;font-weight:500}
+
+    /* Decision tree */
+    .dtree{margin:18px 0}
+    .dtree-title{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+    .dt-node{display:flex;gap:8px;margin-bottom:4px}
+    .dt-box{padding:6px 11px;border-radius:var(--r);font-size:12px;border:0.5px solid var(--border2);flex:1}
+    .dt-box.dec{background:var(--bg2);font-weight:500}
+    .dt-box.og{background:var(--green-fill);color:var(--green-text);border-color:var(--green-bar)}
+    .dt-box.oa{background:var(--amber-fill);color:var(--amber-text);border-color:var(--amber-bar)}
+    .dt-box.or{background:var(--red-fill);color:var(--red-text);border-color:var(--red-bar)}
+    .dt-box.oc{background:var(--cold-fill);color:var(--cold-text);border-color:var(--cold-bar)}
+    .dt-box.op{background:var(--purple-fill);color:var(--purple-text);border-color:var(--purple-bar)}
+    .dt-box.active{font-weight:700;box-shadow:0 0 0 2px var(--text)}
+    .dt-conn{font-size:18px;color:var(--text3);margin:2px 0 2px 10px}
+    .dt-branch{display:flex;flex-direction:column;gap:5px;flex:1}
+    .dt-line::before{content:'├─';font-family:monospace;color:var(--text3);font-size:12px;margin-right:4px}
+    .dt-line.last::before{content:'└─'}
+
+    /* Flow */
+    .flow{display:flex;flex-direction:column}
+    .flow-item{display:flex;align-items:flex-start;gap:11px;padding:9px 0;border-bottom:0.5px solid var(--border)}
+    .flow-item:last-child{border-bottom:none}
+    .flow-num{width:22px;height:22px;border-radius:50%;flex-shrink:0;background:var(--green-bar);color:var(--green-text);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;margin-top:1px}
+    .flow-num.w{background:var(--amber-bar);color:var(--amber-text)}
+    .flow-num.c{background:var(--cold-bar);color:var(--cold-text)}
+    .flow-name{font-size:13px;font-weight:500;margin-bottom:1px}
+    .flow-det{font-size:12px;color:var(--text2)}
+    .flow-tx{font-size:11px;font-family:monospace;color:var(--blue-text);margin-top:2px}
+
+    /* Banners */
+    .banner{border-radius:var(--rl);padding:16px 20px;text-align:center;margin-bottom:16px}
+    .banner h2{font-size:17px;font-weight:600;margin-bottom:3px}
+    .banner p{font-size:13px;color:var(--text2);margin-top:4px}
+    .banner.green{background:var(--green-fill);border:0.5px solid var(--green-bar)}
+    .banner.green h2{color:var(--green-text)}
+    .banner.amber{background:var(--amber-fill);border:0.5px solid var(--amber-bar)}
+    .banner.amber h2{color:var(--amber-text)}
+    .banner.cold{background:var(--cold-fill);border:0.5px solid var(--cold-bar)}
+    .banner.cold h2{color:var(--cold-text)}
+    .banner.purple{background:var(--purple-fill);border:0.5px solid var(--purple-bar)}
+    .banner.purple h2{color:var(--purple-text)}
+    .banner.red{background:var(--red-fill);border:0.5px solid var(--red-bar)}
+    .banner.red h2{color:var(--red-text)}
+
+    /* Buttons */
+    .btn-row{display:flex;gap:9px;margin-top:20px;align-items:center}
+    .btn{padding:9px 18px;font-size:13px;font-weight:500;border:0.5px solid var(--border2);border-radius:var(--r);background:var(--bg);color:var(--text);cursor:pointer;transition:background .15s,transform .1s}
+    .btn:hover{background:var(--bg2)}
+    .btn:active{transform:scale(.98)}
+    .btn-p{background:var(--text);color:var(--bg);border-color:var(--text);flex:1;padding:11px;font-size:14px}
+    .btn-p:hover{opacity:.88;background:var(--text)}
+
+    .sec-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px;font-weight:500}
+    .mono{font-family:"SF Mono","Fira Code",monospace}
+    @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+    footer{text-align:center;font-size:12px;color:var(--text3);margin-top:36px}
+    footer a{color:inherit}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header style="margin-bottom:16px">
+    <h1>SAP EWM — GR to Putaway Simulator <span class="vtag">V4</span></h1>
+    <p class="subtitle">Complete Goods Receipt (GR) to putaway flow in SAP Extended Warehouse Management (EWM).<br>
+    Select a scenario — V4 adds full date/time scheduling, door classification, dock conflict handling, over-delivery, and field validation.</p>
+    <div class="badges">
+      <span class="badge">SAP EWM</span>
+      <span class="badge g">Inbound Process</span>
+      <span class="badge a">Quality Management (QM)</span>
+      <span class="badge c">Cold Chain (LG05)</span>
+      <span class="badge p">FEFO / Near-Expiry</span>
+      <span class="badge r">Over-delivery</span>
+    </div>
+  </header>
+
+  <!-- Scenario selector -->
+  <div class="sc-bar">
+    <h3>Select a scenario</h3>
+    <div class="sc-grid" id="sc-grid"></div>
+  </div>
+
+  <!-- Progress -->
+  <div class="prog" id="prog"></div>
+
+  <!-- Step card -->
+  <div class="card" id="card"></div>
+
+  <footer>
+    SAP EWM GR to Putaway Simulator V4 &mdash;
+    Kaushika Naik Ramavatu · MS Technology Management, UIUC Gies ·
+    <a href="https://kaushikanaikr.substack.com">The Flow of Things</a>
+  </footer>
+</div>
+
+<script>
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const UW = 0.6; // unit weight kg
+const UNDER_TOL = 0.05;
+const OVER_TOL  = 0.10;
+const EXPIRY_WARN = 90; // days
+
+// ─── VENDORS (dropdown, not free text) ───────────────────────────────────────
+const VENDORS = [
+  {id:'V001', name:'Abbott Laboratories',      mat:'IV Saline 500ml',        po:'PO-4500112345'},
+  {id:'V002', name:'Baxter International',     mat:'Insulin Pens 3ml',       po:'PO-4500112346'},
+  {id:'V003', name:'Cardinal Health',          mat:'Surgical Gloves (M)',     po:'PO-4500112347'},
+  {id:'V004', name:'Medtronic',                mat:'Blood Pressure Cuff',     po:'PO-4500112348'},
+  {id:'V005', name:'Johnson & Johnson',        mat:'Bandage Roll 10cm',       po:'PO-4500112349'},
+];
+
+// ─── DOORS ────────────────────────────────────────────────────────────────────
+// type: inbound | outbound | flexible | crossdock
+// status: free | occupied | scheduled
+const DOORS = [
+  {id:'D01', type:'inbound',   label:'Door 1',   status:'free',     truck:null,              window:null},
+  {id:'D02', type:'inbound',   label:'Door 2',   status:'occupied', truck:'Vendor B truck',  window:'07:00–09:30'},
+  {id:'D03', type:'flexible',  label:'Door 3',   status:'scheduled',truck:'Cardinal Health', window:'10:30–12:00'},
+  {id:'D04', type:'inbound',   label:'Door 4',   status:'free',     truck:null,              window:null},
+  {id:'D05', type:'outbound',  label:'Door 5',   status:'occupied', truck:'Outbound — DHL',  window:'08:00–11:00'},
+  {id:'D06', type:'outbound',  label:'Door 6',   status:'free',     truck:null,              window:null},
+  {id:'D07', type:'crossdock', label:'Door 7',   status:'free',     truck:null,              window:null},
+  {id:'D08', type:'flexible',  label:'Door 8',   status:'free',     truck:null,              window:null},
+];
+
+// ─── SCENARIOS ────────────────────────────────────────────────────────────────
+const SCENARIOS = [
+  {id:'normal',   icon:'✅', label:'Normal GR',       qty:200, actualQty:200, condition:0, cold:false, expiryDays:730},
+  {id:'damaged',  icon:'⚠️', label:'Damaged Goods',   qty:200, actualQty:200, condition:1, cold:false, expiryDays:730},
+  {id:'short',    icon:'📦', label:'Short Delivery',  qty:200, actualQty:140, condition:2, cold:false, expiryDays:730},
+  {id:'over',     icon:'📫', label:'Over-delivery',   qty:200, actualQty:230, condition:3, cold:false, expiryDays:730},
+  {id:'cold',     icon:'❄️', label:'Cold Chain',      qty:200, actualQty:200, condition:0, cold:true,  expiryDays:365},
+  {id:'expiry',   icon:'⏰', label:'Near-Expiry',     qty:200, actualQty:200, condition:0, cold:false, expiryDays:45},
+];
+
+// ─── SEARCH SEQUENCES ────────────────────────────────────────────────────────
+const SEARCH = {
+  normal: [
+    {t:'LG01',n:'Zone A — High-velocity', temp:'Ambient',  cap:'200 kg', r:'pass',    cls:'sr-active',  note:'Weight OK, ambient, capacity available → selected'},
+    {t:'LG02',n:'Zone B — Mid-velocity',  temp:'Ambient',  cap:'300 kg', r:'skip',    cls:'sr-blocked', note:'Skipped — LG01 matched first'},
+    {t:'LG03',n:'Zone C — Low-velocity',  temp:'Ambient',  cap:'500 kg', r:'skip',    cls:'sr-blocked', note:'Skipped — LG01 matched first'},
+    {t:'LG04',n:'Zone D — Bulk storage',  temp:'Ambient',  cap:'1000 kg',r:'skip',    cls:'sr-blocked', note:'Skipped — LG01 matched first'},
+  ],
+  damaged: [
+    {t:'LG01',n:'Zone A — High-velocity', temp:'Ambient',  cap:'200 kg', r:'blocked', cls:'sr-blocked', note:'✗ Bypassed — damaged goods cannot enter normal putaway'},
+    {t:'LG02',n:'Zone B — Mid-velocity',  temp:'Ambient',  cap:'300 kg', r:'blocked', cls:'sr-blocked', note:'✗ Bypassed — QM hold stock segregated from unrestricted'},
+    {t:'LG09',n:'QI Hold — LG09',         temp:'Controlled',cap:'Unlimited',r:'pass', cls:'sr-qi',      note:'✓ Quality Inspection storage type — selected automatically'},
+  ],
+  short: [
+    {t:'LG01',n:'Zone A — High-velocity', temp:'Ambient',  cap:'200 kg', r:'pass',    cls:'sr-active',  note:'84 kg < 200 kg limit, ambient, capacity OK → selected'},
+    {t:'LG02',n:'Zone B — Mid-velocity',  temp:'Ambient',  cap:'300 kg', r:'skip',    cls:'sr-blocked', note:'Skipped — LG01 matched first'},
+  ],
+  over: [
+    {t:'LG01',n:'Zone A — High-velocity', temp:'Ambient',  cap:'200 kg', r:'blocked', cls:'sr-blocked', note:'✗ Over-delivery tolerance exceeded — GR blocked pending purchasing approval'},
+    {t:'LG02',n:'Zone B — Mid-velocity',  temp:'Ambient',  cap:'300 kg', r:'blocked', cls:'sr-blocked', note:'✗ All normal types blocked — purchasing must approve before putaway'},
+    {t:'LG10',n:'Over-delivery Hold — LG10',temp:'Ambient',cap:'Unlimited',r:'pass',  cls:'sr-qi',      note:'✓ Temporary hold zone — stock quarantined until PO amendment approved'},
+  ],
+  cold: [
+    {t:'LG01',n:'Zone A — High-velocity', temp:'Ambient',  cap:'200 kg', r:'blocked', cls:'sr-blocked', note:'✗ Bypassed — cold chain item cannot go to ambient storage'},
+    {t:'LG02',n:'Zone B — Mid-velocity',  temp:'Ambient',  cap:'300 kg', r:'blocked', cls:'sr-blocked', note:'✗ Bypassed — temperature mismatch'},
+    {t:'LG05',n:'Cold Storage — LG05',    temp:'2–8°C',    cap:'500 kg', r:'pass',    cls:'sr-cold',    note:'✓ Temperature-controlled storage type — selected'},
+  ],
+  expiry: [
+    {t:'LG01',n:'Zone A — High-velocity', temp:'Ambient',  cap:'200 kg', r:'blocked', cls:'sr-blocked', note:'✗ Bypassed — near-expiry stock must go to FEFO zone'},
+    {t:'LG08',n:'Near-Expiry — LG08',     temp:'Ambient',  cap:'300 kg', r:'pass',    cls:'sr-expiry',  note:'✓ FEFO (First Expiry First Out) zone — picked before standard stock'},
+  ],
+};
+
+const BIN_GRIDS = {
+  normal: [{i:'A-01',c:'bn'},{i:'A-02',c:'bn'},{i:'A-03',c:'ba'},{i:'A-04',c:'bn'},{i:'A-05',c:'ba'},{i:'A-06',c:'bn'},{i:'A-07',c:'bs'},{i:'A-08',c:'ba'},{i:'A-09',c:'bn'},{i:'A-10',c:'bn'},{i:'A-11',c:'ba'},{i:'A-12',c:'ba'}],
+  short:  [{i:'A-01',c:'bn'},{i:'A-02',c:'bn'},{i:'A-03',c:'ba'},{i:'A-04',c:'bn'},{i:'A-05',c:'ba'},{i:'A-06',c:'bn'},{i:'A-07',c:'bs'},{i:'A-08',c:'ba'},{i:'A-09',c:'bn'},{i:'A-10',c:'bn'},{i:'A-11',c:'ba'},{i:'A-12',c:'ba'}],
+  damaged:[{i:'QI-01',c:'bq'},{i:'QI-02',c:'bn'},{i:'QI-03',c:'ba'},{i:'QI-04',c:'ba'},{i:'QI-05',c:'ba'},{i:'QI-06',c:'ba'}],
+  over:   [{i:'OD-01',c:'bq'},{i:'OD-02',c:'ba'},{i:'OD-03',c:'ba'},{i:'OD-04',c:'ba'},{i:'OD-05',c:'ba'},{i:'OD-06',c:'ba'}],
+  cold:   [{i:'CC-01',c:'bc'},{i:'CC-02',c:'ba'},{i:'CC-03',c:'ba'},{i:'CC-04',c:'ba'},{i:'CC-05',c:'bn'},{i:'CC-06',c:'bn'}],
+  expiry: [{i:'EX-01',c:'bx'},{i:'EX-02',c:'ba'},{i:'EX-03',c:'ba'},{i:'EX-04',c:'ba'},{i:'EX-05',c:'bn'},{i:'EX-06',c:'ba'}],
+};
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let step = 0;
+let sc   = 'normal';
+let selectedDoor = null;
+let selectedVendorIdx = 0;
+const saved = {};
+
+function getSC(){ return SCENARIOS.find(s=>s.id===sc); }
+function getV() { return VENDORS[selectedVendorIdx]; }
+function getBatch(){ return saved.gr && saved.gr.batch ? saved.gr.batch : genBatch(); }
+function genBatch(){ return 'BT-'+new Date().getFullYear()+'-'+String(Math.floor(Math.random()*9000)+1000); }
+function expiryDate(days){ const d=new Date(); d.setDate(d.getDate()+days); return d.toISOString().split('T')[0]; }
+function calcW(q){ return Math.round(q*UW*10)/10; }
+function defaultArrival(){
+  const d=new Date(); d.setHours(9,0,0,0);
+  const ds=d.toISOString().slice(0,16);
+  return ds;
+}
+
+const STEP_LABELS=['Inbound delivery','GR posting','Transfer order','Storage search','Bin determined','Confirmed'];
+
+// ─── SCENARIO SELECTOR ────────────────────────────────────────────────────────
+function renderSC(){
+  document.getElementById('sc-grid').innerHTML=SCENARIOS.map(s=>`
+    <button class="sc-btn ${s.id===sc?'active':''}" onclick="selectSC('${s.id}')">
+      <span class="sc-icon">${s.icon}</span>${s.label}
+    </button>`).join('');
+}
+
+function selectSC(id){
+  sc=id; step=0; selectedDoor=null; selectedVendorIdx=0;
+  Object.keys(saved).forEach(k=>delete saved[k]);
+  renderSC(); buildProg(); renderStep();
+}
+
+// ─── PROGRESS ────────────────────────────────────────────────────────────────
+function buildProg(){
+  const styleMap={normal:'done',damaged:'warn',short:'warn',over:'warn',cold:'cold',expiry:'warn'};
+  const iconMap={normal:'✓',damaged:'⚠',short:'⚠',over:'⚠',cold:'❄',expiry:'⏰'};
+  document.getElementById('prog').innerHTML=STEP_LABELS.map((lbl,i)=>{
+    const done=i<step, active=i===step;
+    const dc=done?styleMap[sc]:active?'active':'';
+    const lc=done?styleMap[sc]:'';
+    const icon=done?iconMap[sc]:i+1;
+    return `<div class="prog-step" onclick="jumpTo(${i})">
+      <div class="prog-dot ${dc}">${icon}</div>
+      <div class="prog-line ${lc}"></div>
+      <div class="prog-lbl ${done?'done':active?'active':''}">${lbl}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── BATCH TRACKER ────────────────────────────────────────────────────────────
+function batchTracker(){
+  if(step<1) return '';
+  const batch=getBatch();
+  const tags=['GR posting','TO created','Bin assigned','Confirmed'];
+  const reached=Math.min(step,4);
+  return `<div class="batch-bar">
+    🔎 Batch <strong>${batch}</strong> — tracked:
+    <div class="batch-steps">${tags.map((t,i)=>`<span class="b-tag ${i<reached?'on':''}">${t}</span>`).join('')}</div>
+  </div>`;
+}
+
+// ─── DOOR PANEL ──────────────────────────────────────────────────────────────
+function doorPanel(){
+  const inboundTypes=['inbound','flexible','crossdock'];
+  return `<div class="dock-panel">
+    <h4>Select arrival door — current dock status</h4>
+    <div class="door-grid">${DOORS.map(d=>{
+      const isUsable=inboundTypes.includes(d.type)&&d.status!=='occupied';
+      const isSel=selectedDoor===d.id;
+      let cls=d.type==='outbound'?'outbound':d.status;
+      return `<div class="door-card ${cls} ${isSel?'selected':''}"
+        onclick="${isUsable?`selectDoor('${d.id}')`:'showDoorError(\''+d.id+'\')'}">
+        <div class="door-name">${d.label}</div>
+        <div class="door-type">${d.type.toUpperCase()}</div>
+        <div class="door-status">${d.status.toUpperCase()}</div>
+        ${d.truck?`<div class="door-truck">${d.truck}<br>${d.window}</div>`:'<div class="door-truck">Available</div>'}
+      </div>`;
+    }).join('')}</div>
+    <div class="dock-conflict" id="dock-conflict"></div>
+    <div class="yard-zone" id="yard-zone"></div>
+  </div>`;
+}
+
+function selectDoor(id){
+  const door=DOORS.find(d=>d.id===id);
+  // Check if arrival window overlaps scheduled truck
+  if(door.status==='scheduled'){
+    document.getElementById('dock-conflict').style.display='block';
+    document.getElementById('dock-conflict').innerHTML=`<strong>⚠ Dock scheduling conflict:</strong> ${door.label} is scheduled for ${door.truck} from ${door.window}. Your arrival window may overlap.<br><br>
+    <strong>EWM Yard Management (YM) options:</strong><br>
+    1. Select a different free door (Door 1 or Door 4 are available)<br>
+    2. Accept this door — truck directed to <strong>Yard Waiting Zone Y-03</strong> if conflict occurs at arrival`;
+    document.getElementById('yard-zone').style.display='block';
+    document.getElementById('yard-zone').innerHTML=`🚛 <strong>Yard Waiting Zone Y-03 pre-assigned</strong> — if Door 3 is still occupied at your truck's arrival, driver will be directed to wait in Y-03 until door clears. Yard task auto-generated in EWM YM.`;
+  } else {
+    document.getElementById('dock-conflict').style.display='none';
+    document.getElementById('yard-zone').style.display='none';
+  }
+  selectedDoor=id;
+  // Re-render door panel to show selection
+  document.getElementById('door-panel-wrap').innerHTML=doorPanel();
+  // Re-attach conflict visibility if scheduled
+  if(door.status==='scheduled'){
+    document.getElementById('dock-conflict').style.display='block';
+    document.getElementById('dock-conflict').innerHTML=`<strong>⚠ Dock scheduling conflict — overlap risk:</strong> ${door.label} has ${door.truck} scheduled ${door.window}.<br><br>
+    <strong>EWM Yard Management options:</strong> Select Door 1 or Door 4 (both free), or proceed and truck goes to <strong>Yard Waiting Zone Y-03</strong> if door not clear at arrival.`;
+    document.getElementById('yard-zone').style.display='block';
+    document.getElementById('yard-zone').innerHTML=`🚛 <strong>Yard Waiting Zone Y-03 pre-assigned.</strong> If door still occupied on arrival, driver directed to Y-03. Yard task auto-generated in EWM Yard Management (YM).`;
+  }
+}
+
+function showDoorError(id){
+  const door=DOORS.find(d=>d.id===id);
+  if(door.type==='outbound'){
+    showErr('door-err',`${door.label} is an outbound door — it cannot be used for inbound deliveries. Please select an inbound, flexible, or cross-dock door.`);
+  } else {
+    showErr('door-err',`${door.label} is currently occupied by ${door.truck} until ${door.window}. Select a free door or wait until this door clears.`);
+  }
+}
+
+// ─── RENDER STEP ─────────────────────────────────────────────────────────────
+function renderStep(){
+  const s=getSC();
+  let html=batchTracker();
+
+  // Scenario banners for steps 2+
+  if(step>=2){
+    const banners={
+      damaged:`<div class="alert-box"><strong>⚠ Quality Management (QM) Hold active:</strong> Damaged goods bypass all normal storage types. Routed to LG09 (Quality Inspection). Stock blocked until QA32 usage decision.</div>`,
+      short:`<div class="warn-box"><strong>⚠ Short Delivery — outside 5% tolerance:</strong> ${s.actualQty} of ${s.qty} EA received. Delivery stays open for ${s.qty-s.actualQty} EA. TO weight auto-adjusted to ${calcW(s.actualQty)} kg.</div>`,
+      over:`<div class="alert-box"><strong>⛔ Over-delivery — purchasing approval required:</strong> ${s.actualQty} EA received vs ${s.qty} EA expected (${Math.round((s.actualQty-s.qty)/s.qty*100)}% over — exceeds 10% tolerance). GR blocked. Stock quarantined in LG10 (Over-delivery Hold) until Purchase Order (PO) is amended and purchasing approves. Transaction: ME22N (PO change) / MIRO (invoice verification).</div>`,
+      cold:`<div class="cold-box"><strong>❄ Cold chain routing active:</strong> Temperature-sensitive item. All ambient zones bypassed. Routing directly to LG05 (Cold Storage, 2–8°C). Temperature log recorded at each step.</div>`,
+      expiry:`<div class="purple-box"><strong>⏰ FEFO routing active:</strong> Expiry date ${expiryDate(s.expiryDays)} — only ${s.expiryDays} days remaining (below 90-day threshold). Routed to LG08 (Near-Expiry Zone). FEFO picking enforced.</div>`,
+    };
+    if(banners[sc]) html+=banners[sc];
+  }
+
+  // Step content
+  html+=`<div class="step-no">Step ${step+1} of 6</div>`;
+
+  if(step===0) html+=renderStep0();
+  else if(step===1) html+=renderStep1();
+  else if(step===2) html+=renderStep2();
+  else if(step===3) html+=renderStep3();
+  else if(step===4) html+=renderStep4();
+  else if(step===5) html+=renderStep5();
+
+  // Info box
+  const infos=[
+    `<strong>EWM logic:</strong> On delivery creation, EWM validates the Purchase Order (PO) — delivery number is system-generated from the PO, vendor is pulled from the business partner master, material is validated against the material master. Manual free-text entry doesn't exist in real EWM. Full date and time are mandatory for Yard Management (YM) door scheduling.`,
+    `<strong>EWM logic:</strong> GR posting validates quantity against PO tolerances. Over-delivery > 10% → GR blocked, purchasing approval required. Short delivery > 5% → partial GR, delivery stays open. Damaged → QM hold route. Cold chain flag → LG05 route. Shelf life < 90 days → FEFO route to LG08.`,
+    `<strong>EWM logic:</strong> Transfer Order (TO) carries batch number, handling unit (HU), and auto-calculated weight from actual quantity received. If over-delivery, TO is not created until purchasing approves — stock sits in quarantine.`,
+    `<strong>EWM logic:</strong> Storage type search sequence is configured in SPRO. Each scenario triggers a different routing path. Normal goods start at LG01. Cold chain goes directly to LG05. Damaged goods go to LG09. Over-delivery goes to LG10. Near-expiry goes to LG08.`,
+    `<strong>EWM logic:</strong> Bin determination uses the putaway rule on the storage type. "Next empty bin" is most common. Weight is always checked against bin maximum before confirmation. Mixed storage rules prevent different materials sharing a bin in pharma environments.`,
+    `<strong>EWM logic:</strong> RF (Radio Frequency) scanner confirmation triggers stock posting in EWM and MM-IM. Bin stock updated. Inbound delivery marked complete. Warehouse Request (WR) closed. Batch traceability record finalized — auditable from vendor delivery to exact bin location.`,
+  ][step];
+
+  const boxCls=(sc==='damaged'||sc==='over')&&step>=1?'alert-box':sc==='cold'&&step>=1?'cold-box':sc==='expiry'&&step>=1?'purple-box':sc==='short'&&step>=1?'warn-box':'info-box';
+  html+=`<div class="${boxCls}">${infos}</div>`;
+
+  // Buttons
+  html+=`<div class="btn-row">
+    ${step>0?'<button class="btn" onclick="prevStep()">← Back</button>':''}
+    ${step<5
+      ?`<button class="btn btn-p" onclick="nextStep()">Continue →</button>`
+      :`<button class="btn btn-p" onclick="showSummary()">Complete & View Decision Tree ✓</button>`}
+  </div>`;
+
+  document.getElementById('card').innerHTML=html;
+}
+
+// ─── STEP 0: Inbound Delivery ─────────────────────────────────────────────────
+function renderStep0(){
+  const v=getV();
+  return `
+    <div class="step-title">Inbound Delivery Created</div>
+    <div class="step-desc">An inbound delivery notification is sent from the vendor or created in EWM. EWM validates against the Purchase Order (PO) — vendor, material, and quantity are all cross-checked automatically. Arrival date and time are mandatory for Yard Management (YM) door scheduling.</div>
+    <div class="tx-badge">EWM transaction: <span>VL31N / /SCWM/PRDI</span></div>
+    <div class="fields" style="margin-top:16px">
+      <div class="frow">
+        <div class="field">
+          <label>Vendor name — from business partner master</label>
+          <select class="vendor-select" id="f-vendor" onchange="vendorChanged()">
+            ${VENDORS.map((vv,i)=>`<option value="${i}" ${i===selectedVendorIdx?'selected':''}>${vv.name}</option>`).join('')}
+          </select>
+          <div class="hint">In real EWM — selected from vendor master, not typed freely</div>
+        </div>
+        <div class="field">
+          <label>Purchase Order (PO) number <span class="auto-tag">auto from PO</span></label>
+          <input type="text" id="f-po" value="${v.po}" readonly>
+          <div class="hint">Auto-populated when vendor is selected — validates delivery is authorised</div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="field">
+          <label>Inbound delivery number <span class="auto-tag">system generated</span></label>
+          <input type="text" id="f-delno" value="1800042371" readonly>
+          <div class="hint">System-generated from PO — not manually entered in real EWM</div>
+        </div>
+        <div class="field">
+          <label>Material / SKU <span class="auto-tag">from PO</span></label>
+          <input type="text" id="f-mat" value="${v.mat}" readonly>
+          <div class="hint">Pulled from PO line item — validated against material master</div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="field">
+          <label>Expected quantity (EA)</label>
+          <input type="number" id="f-qty" value="${getSC().qty}" min="1">
+          <div class="hint">Must match PO quantity or be within over/under-delivery tolerance</div>
+        </div>
+        <div class="field">
+          <label>Arrival date and time <span class="auto-tag">V4 — full datetime</span></label>
+          <input type="datetime-local" id="f-arrival" value="${defaultArrival()}">
+          <div class="hint">Mandatory for Yard Management (YM) door scheduling — date + time, not just time</div>
+        </div>
+      </div>
+    </div>
+    <div id="door-panel-wrap">${doorPanel()}</div>
+    <div id="door-err"></div>`;
+}
+
+function vendorChanged(){
+  selectedVendorIdx=parseInt(document.getElementById('f-vendor').value);
+  const v=getV();
+  document.getElementById('f-po').value=v.po;
+  document.getElementById('f-mat').value=v.mat;
+}
+
+// ─── STEP 1: GR Posting ───────────────────────────────────────────────────────
+function renderStep1(){
+  const s=getSC();
+  const batch=genBatch();
+  return `
+    <div class="step-title">Goods Receipt (GR) Posted</div>
+    <div class="step-desc">Truck arrives and is unloaded. Operator confirms quantity and condition. EWM validates against PO tolerances — quantity, condition, cold chain flag, and shelf life all determine the downstream routing. This is the most consequential step.</div>
+    <div class="tx-badge">EWM transaction: <span>MIGO (MM-IM) / /SCWM/GR</span></div>
+    <div class="fields" style="margin-top:16px">
+      <div class="frow">
+        <div class="field">
+          <label>GR document number <span class="auto-tag">system generated</span></label>
+          <input type="text" id="f-grdoc" value="5000112847" readonly>
+        </div>
+        <div class="field">
+          <label>Actual quantity received (EA)</label>
+          <input type="number" id="f-aqty" value="${s.actualQty}" min="1" oninput="checkQtyMismatch()">
+          <div class="hint" id="qty-hint">Expected: ${s.qty} EA — change to simulate short or over-delivery</div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="field">
+          <label>Batch number <span class="batch-tag">batch tracked</span></label>
+          <input type="text" id="f-batch" value="${batch}">
+          <div class="hint">Mandatory in pharma — tracked through every subsequent step</div>
+        </div>
+        <div class="field">
+          <label>Expiry date</label>
+          <input type="date" id="f-expiry" value="${expiryDate(s.expiryDays)}">
+          <div class="hint">Shelf life check — FEFO routing triggered if &lt; 90 days remaining</div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="field">
+          <label>Cold chain item?</label>
+          <select id="f-cold">
+            <option value="0" ${!s.cold?'selected':''}>No — ambient storage</option>
+            <option value="1" ${s.cold?'selected':''}>Yes — temperature-sensitive (LG05)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Goods condition</label>
+          <select id="f-cond" onchange="checkConditionMismatch()">
+            <option value="0" ${s.condition===0?'selected':''}>OK — proceed to putaway</option>
+            <option value="1" ${s.condition===1?'selected':''}>Damaged — Quality hold (LG09)</option>
+            <option value="2" ${s.condition===2?'selected':''}>Short delivery — partial GR</option>
+            <option value="3" ${s.condition===3?'selected':''}>Over-delivery — tolerance check</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="gr-warn"></div>`;
+}
+
+function checkQtyMismatch(){
+  const aqty=parseFloat(document.getElementById('f-aqty')?.value)||0;
+  const eqty=getSC().qty;
+  const hint=document.getElementById('qty-hint');
+  if(!hint) return;
+  const pct=Math.round(Math.abs(aqty-eqty)/eqty*100);
+  if(aqty<eqty){
+    const tol=pct<=5?'within 5% tolerance — delivery will close':'OUTSIDE 5% tolerance — delivery stays open';
+    hint.innerHTML=`Expected: ${eqty} EA — <strong style="color:var(--amber-text)">Short by ${eqty-aqty} EA (${pct}%) — ${tol}</strong>`;
+  } else if(aqty>eqty){
+    const tol=pct<=10?'within 10% tolerance — GR allowed':'OUTSIDE 10% tolerance — GR BLOCKED, purchasing approval required';
+    hint.innerHTML=`Expected: ${eqty} EA — <strong style="color:var(--red-text)">Over by ${aqty-eqty} EA (${pct}%) — ${tol}</strong>`;
+  } else {
+    hint.innerHTML=`Expected: ${eqty} EA — ✓ Quantities match`;
+  }
+}
+
+function checkConditionMismatch(){
+  const cond=parseInt(document.getElementById('f-cond')?.value)||0;
+  const aqty=parseFloat(document.getElementById('f-aqty')?.value)||getSC().qty;
+  const eqty=getSC().qty;
+  const warn=document.getElementById('gr-warn');
+  if(!warn) return;
+  if(cond===2&&aqty>=eqty){
+    warn.innerHTML=`<div class="alert-box" style="animation:shake .3s ease"><strong>⛔ Validation error:</strong> Condition set to "Short delivery" but actual quantity (${aqty} EA) ≥ expected (${eqty} EA). Please reduce quantity or change condition.</div>`;
+  } else if(cond===3&&aqty<=eqty){
+    warn.innerHTML=`<div class="alert-box" style="animation:shake .3s ease"><strong>⛔ Validation error:</strong> Condition set to "Over-delivery" but actual quantity (${aqty} EA) ≤ expected (${eqty} EA). Please increase quantity or change condition.</div>`;
+  } else if((cond===0||cond===1)&&aqty!==eqty){
+    warn.innerHTML=`<div class="warn-box"><strong>⚠ Quantity mismatch:</strong> Condition is "${['OK','Damaged','Short','Over'][cond]}" but quantity differs from expected. Please change condition to match actual situation.</div>`;
+  } else { warn.innerHTML=''; }
+}
+
+// ─── STEP 2: Transfer Order ───────────────────────────────────────────────────
+function renderStep2(){
+  const s=getSC();
+  const batch=getBatch();
+  const w=calcW(s.actualQty);
+  const toNo=sc==='damaged'?'TO-QI-2026-004822':sc==='over'?'TO-OD-HOLD-2026':'TO-2026-004821';
+  return `
+    <div class="step-title">Transfer Order (TO) Created</div>
+    <div class="step-desc">EWM creates a putaway Transfer Order — the instruction to move goods from the staging area to a storage bin. Batch number, weight, and routing type are all carried through from GR. Weight is auto-calculated from actual quantity received.</div>
+    <div class="tx-badge">EWM transaction: <span>/SCWM/TO_CREATE / LT0A</span></div>
+    <div class="fields" style="margin-top:16px">
+      <div class="frow">
+        <div class="field">
+          <label>Transfer Order (TO) number <span class="auto-tag">system generated</span></label>
+          <input type="text" value="${toNo}" readonly>
+        </div>
+        <div class="field">
+          <label>Handling Unit (HU) <span class="auto-tag">scanned at GR</span></label>
+          <input type="text" value="HU-00921" readonly>
+          <div class="hint">HU = physical pallet/carton ID — scanned at GR, carried through TO</div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="field">
+          <label>Batch number <span class="batch-tag">carried from GR</span></label>
+          <input type="text" value="${batch}" readonly>
+          <div class="hint">Same batch from GR step — tracked at every movement</div>
+        </div>
+        <div class="field">
+          <label>Total weight (kg) <span class="auto-tag">auto calculated</span></label>
+          <input type="number" value="${w}" readonly>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="field">
+          <label>Source bin — staging area</label>
+          <input type="text" value="GR-STG-01 / BIN-001" readonly>
+        </div>
+        <div class="field">
+          <label>Assigned operator</label>
+          <input type="text" id="f-op" value="WH-OP-07 / Ravi Kumar">
+        </div>
+      </div>
+    </div>
+    <div class="green-box" style="margin-top:12px">
+      ✓ <strong>Auto-calculated weight:</strong> ${s.actualQty} EA × ${UW} kg = <strong>${w} kg</strong>
+      ${s.actualQty!==s.qty?` — adjusted from ${calcW(s.qty)} kg due to ${s.actualQty>s.qty?'over':'short'} delivery.`:''}
+    </div>
+    ${sc==='over'?`<div class="alert-box">⛔ <strong>TO creation blocked:</strong> Over-delivery scenario — Transfer Order cannot be created until Purchase Order (PO) is amended (ME22N) and purchasing approves the excess quantity. Stock sits in quarantine (LG10) until approval.</div>`:''}`;
+}
+
+// ─── STEP 3: Storage Type Search ──────────────────────────────────────────────
+function renderStep3(){
+  const seq=SEARCH[sc]||SEARCH.normal;
+  return `
+    <div class="step-title">Storage Type Search Sequence</div>
+    <div class="step-desc">EWM evaluates storage types in priority order. Each is checked against capacity, weight, temperature zone, shelf life, and product category. First match wins — and this decision is entirely determined by the scenario routing.</div>
+    <div class="tx-badge">EWM transaction: <span>SPRO → EWM → Putaway Strategy</span></div>
+    <div class="sec-lbl" style="margin-top:16px">Storage Type Search Sequence evaluation</div>
+    <table class="search-table">
+      <thead><tr><th>Priority</th><th>Storage type</th><th>Description</th><th>Temp zone</th><th>Max weight</th><th>Result</th><th>Notes</th></tr></thead>
+      <tbody>${seq.map((r,i)=>`
+        <tr class="${r.cls}">
+          <td>${i+1}</td><td class="mono">${r.t}</td><td>${r.n}</td>
+          <td>${r.temp}</td><td>${r.cap}</td>
+          <td>${r.r==='pass'?'<span class="chk">✓ Selected</span>':r.r==='blocked'?'<span style="color:#A32D2D">✗ Blocked</span>':'<span style="color:var(--text3)">— Skip</span>'}</td>
+          <td style="font-size:12px">${r.note}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+// ─── STEP 4: Bin Determination ────────────────────────────────────────────────
+function renderStep4(){
+  const batch=getBatch();
+  const stMap={normal:'LG01 — Zone A (high-velocity)',damaged:'LG09 — Quality Inspection (QI)',short:'LG01 — Zone A',over:'LG10 — Over-delivery Hold',cold:'LG05 — Cold Storage (2–8°C)',expiry:'LG08 — Near-Expiry / FEFO Zone'};
+  const prMap={normal:'Next empty bin — sorted by aisle',damaged:'Next available QI bin',short:'Next empty bin — sorted by aisle',over:'Next available hold bin',cold:'Next cold bin — FIFO',expiry:'Next expiry bin — FEFO enforced'};
+  const binMap={normal:'A-07 / Aisle 1 / Level 2',damaged:'QI-01 / Inspection Zone',short:'A-07 / Aisle 1 / Level 2',over:'OD-01 / Over-delivery Hold Zone',cold:'CC-01 / Cold Storage / Level 1',expiry:'EX-01 / Near-Expiry Zone / Level 2'};
+  const lblMap={normal:'Zone A (LG01) bins',damaged:'Quality Inspection (LG09) bins',short:'Zone A (LG01) bins — partial TO',over:'Over-delivery Hold (LG10) bins',cold:'Cold Storage (LG05) bins',expiry:'Near-Expiry Zone (LG08) bins'};
+  const grid=BIN_GRIDS[sc]||BIN_GRIDS.normal;
+  return `
+    <div class="step-title">Bin Determined</div>
+    <div class="step-desc">Within the selected storage type, EWM finds the exact bin. The putaway rule, weight limit, and capacity are all checked before confirming. Batch number is recorded at bin level for traceability.</div>
+    <div class="tx-badge">EWM transaction: <span>/SCWM/BIN / LX04</span></div>
+    <div class="fields" style="margin-top:16px">
+      <div class="frow">
+        <div class="field"><label>Selected storage type</label><input type="text" value="${stMap[sc]}" readonly></div>
+        <div class="field"><label>Putaway rule applied</label><input type="text" value="${prMap[sc]}" readonly></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>Destination bin assigned</label><input type="text" value="${binMap[sc]}"><div class="hint">Final putaway location</div></div>
+        <div class="field"><label>Batch at bin <span class="batch-tag">batch tracked</span></label><input type="text" value="${batch}" readonly></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>Bin max weight (kg)</label><input type="number" value="${sc==='damaged'||sc==='over'?9999:200}"><div class="hint">Physical rack limit — weight must not exceed</div></div>
+        <div class="field"><label>Mixed storage allowed?</label><select><option>No — single material per bin</option><option>Yes — mixed materials allowed</option></select></div>
+      </div>
+    </div>
+    <div style="margin-top:14px;font-size:12px;color:var(--text2);margin-bottom:7px">${lblMap[sc]}</div>
+    <div class="bin-grid">${grid.map(b=>`<div class="bin ${b.c}">${b.i}${b.c==='bs'||b.c==='bq'||b.c==='bc'||b.c==='bx'||b.c==='bq'?' ✓':''}</div>`).join('')}</div>`;
+}
+
+// ─── STEP 5: Confirmation ─────────────────────────────────────────────────────
+function renderStep5(){
+  const s=getSC();
+  const batch=getBatch();
+  const binMap={normal:'A-07',damaged:'QI-01',short:'A-07',over:'OD-01',cold:'CC-01',expiry:'EX-01'};
+  return `
+    <div class="step-title">Warehouse Task Confirmed</div>
+    <div class="step-desc">Operator physically moves goods to the assigned bin and confirms via RF (Radio Frequency) scanner. EWM updates bin stock, closes the Transfer Order (TO), and finalises the Warehouse Request (WR). Batch traceability record is complete.</div>
+    <div class="tx-badge">EWM transaction: <span>/SCWM/TO_CONF / LT1A</span></div>
+    <div class="fields" style="margin-top:16px">
+      <div class="frow">
+        <div class="field"><label>Confirmation method</label><select id="f-conf-meth"><option>RF scanner — bin barcode scan</option><option>EWM monitor — manual confirm</option><option>Auto-confirm (conveyor system)</option></select></div>
+        <div class="field"><label>Confirmed quantity (EA)</label><input type="number" id="f-conf-qty" value="${s.actualQty}"><div class="hint">Must match TO quantity</div></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>Confirmed bin</label><input type="text" value="${binMap[sc]}" readonly></div>
+        <div class="field"><label>Batch confirmed at bin <span class="batch-tag">batch tracked</span></label><input type="text" value="${batch}" readonly><div class="hint">Batch traceability record finalised</div></div>
+      </div>
+      <div class="frow">
+        <div class="field"><label>Stock type after putaway</label><select id="f-stock"><option ${sc!=='damaged'&&sc!=='over'?'selected':''}>Unrestricted use</option><option ${sc==='damaged'||sc==='over'?'selected':''}>Quality inspection</option><option>Blocked</option></select></div>
+        <div class="field"><label>Confirmation timestamp <span class="auto-tag">system</span></label><input type="text" value="${new Date().toLocaleString()}" readonly></div>
+      </div>
+    </div>`;
+}
+
+// ─── VALIDATION ───────────────────────────────────────────────────────────────
+function validateStep(){
+  clearErr('door-err'); clearErr('gr-warn');
+
+  if(step===0){
+    if(!selectedDoor){
+      showErr('door-err','Please select an arrival door before continuing.');
+      return false;
+    }
+  }
+
+  if(step===1){
+    const aqty=parseFloat(document.getElementById('f-aqty')?.value)||0;
+    const cond=parseInt(document.getElementById('f-cond')?.value)||0;
+    const eqty=getSC().qty;
+    const grWarn=document.getElementById('gr-warn');
+
+    if(aqty<=0){
+      if(grWarn) grWarn.innerHTML=`<div class="alert-box" style="animation:shake .3s ease"><strong>⛔ Actual quantity must be greater than 0.</strong></div>`;
+      return false;
+    }
+    if(cond===2&&aqty>=eqty){
+      if(grWarn) grWarn.innerHTML=`<div class="alert-box" style="animation:shake .3s ease"><strong>⛔ Validation error:</strong> "Short delivery" selected but actual quantity (${aqty} EA) ≥ expected (${eqty} EA). Reduce quantity or change condition.</div>`;
+      return false;
+    }
+    if(cond===3&&aqty<=eqty){
+      if(grWarn) grWarn.innerHTML=`<div class="alert-box" style="animation:shake .3s ease"><strong>⛔ Validation error:</strong> "Over-delivery" selected but actual quantity (${aqty} EA) ≤ expected (${eqty} EA). Increase quantity or change condition.</div>`;
+      return false;
+    }
+    if((cond===0||cond===1)&&aqty<eqty){
+      if(grWarn) grWarn.innerHTML=`<div class="alert-box" style="animation:shake .3s ease"><strong>⛔ Quantity mismatch:</strong> Actual (${aqty} EA) < expected (${eqty} EA) but condition is not "Short delivery". Please correct.</div>`;
+      return false;
+    }
+    if((cond===0||cond===1||cond===2)&&aqty>eqty){
+      const pct=Math.round((aqty-eqty)/eqty*100);
+      if(pct>10){
+        if(grWarn) grWarn.innerHTML=`<div class="alert-box" style="animation:shake .3s ease"><strong>⛔ Over-delivery detected (${pct}% excess):</strong> Change condition to "Over-delivery" to proceed.</div>`;
+        return false;
+      }
+    }
+    // Save GR data
+    saved.gr={
+      aqty: aqty,
+      batch: document.getElementById('f-batch')?.value || genBatch(),
+      expiry: document.getElementById('f-expiry')?.value,
+      cold: document.getElementById('f-cold')?.value,
+      cond: cond
+    };
+  }
+  return true;
+}
+
+function showErr(id,msg){
+  const el=document.getElementById(id);
+  if(el){ el.innerHTML=`<div class="alert-box" style="animation:shake .3s ease;margin-top:10px"><strong>⛔ ${msg}</strong></div>`; }
+}
+function clearErr(id){ const el=document.getElementById(id); if(el) el.innerHTML=''; }
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+function nextStep(){
+  if(!validateStep()) return;
+  if(step<5){ step++; buildProg(); renderStep(); }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function prevStep(){ if(step>0){ step--; buildProg(); renderStep(); } window.scrollTo({top:0,behavior:'smooth'}); }
+function jumpTo(i){ if(i>step) return; step=i; buildProg(); renderStep(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+// ─── SUMMARY + DECISION TREE ─────────────────────────────────────────────────
+function showSummary(){
+  const s=getSC();
+  const v=getV();
+  const batch=getBatch();
+  const w=calcW(s.actualQty);
+  const door=DOORS.find(d=>d.id===selectedDoor)||DOORS[0];
+  const destBin={normal:'A-07 / Zone A / LG01',damaged:'QI-01 / LG09 — QM Inspection',short:'A-07 / Zone A / LG01',over:'OD-01 / LG10 — Over-delivery Hold',cold:'CC-01 / LG05 — Cold Storage',expiry:'EX-01 / LG08 — Near-Expiry Zone'}[sc];
+  const stockType={normal:'Unrestricted use',damaged:'Quality inspection — awaiting QM release',short:'Unrestricted use (partial)',over:'Quarantine — awaiting PO amendment',cold:'Unrestricted use (cold chain)',expiry:'Unrestricted use (FEFO active)'}[sc];
+
+  const items=[
+    {l:'Vendor',v:v.name},{l:'PO number',v:v.po},{l:'Material / SKU',v:v.mat},
+    {l:'Expected quantity',v:s.qty+' EA'},{l:'Actual quantity received',v:s.actualQty+' EA'},
+    {l:'Total weight (auto)',v:w+' kg'},{l:'Batch (all steps)',v:batch},
+    {l:'Arrival door',v:door.label+' — '+door.type},{l:'Destination bin',v:destBin},
+    {l:'Stock type',v:stockType},{l:'Scenario',v:s.icon+' '+s.label},
+  ];
+
+  const trees={
+    normal:`<div class="dt-node"><div class="dt-box dec active">GR posted — ${s.actualQty} EA, condition OK, ${s.cold?'cold chain':'ambient'}</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box dec active">Quantity check → matches expected ✓</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box dec active">Cold chain? → No</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box dec active">Shelf life check → OK (${s.expiryDays} days)</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box dec active">Storage type search → LG01 (Zone A) ✓</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box og active">✓ Bin A-07 — Unrestricted use</div></div>`,
+
+    damaged:`<div class="dt-node"><div class="dt-box dec active">GR posted — condition DAMAGED</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box or active">⚠ Condition check → DAMAGED</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box dec active">LG01–LG04 all blocked → LG09 (QI) selected</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box oa active">QI-01 assigned — stock blocked, QA32 required</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node" style="gap:6px"><div style="flex:1;display:flex;flex-direction:column;gap:5px">
+        <div class="dt-node"><div class="dt-line"></div><div class="dt-box og">QM Release → reclassification TO → unrestricted bin</div></div>
+        <div class="dt-node"><div class="dt-line last"></div><div class="dt-box or">QM Rejection → return to vendor TO</div></div>
+      </div></div>`,
+
+    short:`<div class="dt-node"><div class="dt-box dec active">GR posted — ${s.actualQty} EA vs ${s.qty} EA expected</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box oa active">Short delivery — ${Math.round((s.qty-s.actualQty)/s.qty*100)}% below expected</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node" style="gap:6px"><div style="flex:1;display:flex;flex-direction:column;gap:5px">
+        <div class="dt-node"><div class="dt-line"></div><div class="dt-box oa active">Outside 5% tolerance → partial GR, delivery stays OPEN for ${s.qty-s.actualQty} EA</div></div>
+        <div class="dt-node"><div class="dt-line last"></div><div class="dt-box og">Within 5% tolerance → delivery closed</div></div>
+      </div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box dec active">TO created — ${w} kg (auto from ${s.actualQty} EA × ${UW} kg)</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box og active">✓ A-07 assigned — ${s.actualQty} EA putaway. ${s.qty-s.actualQty} EA outstanding.</div></div>`,
+
+    over:`<div class="dt-node"><div class="dt-box dec active">GR attempted — ${s.actualQty} EA vs ${s.qty} EA expected</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box or active">⛔ Over-delivery — ${Math.round((s.actualQty-s.qty)/s.qty*100)}% above expected — exceeds 10% tolerance</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box or active">GR BLOCKED — all normal storage types blocked</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box oa active">LG10 (Over-delivery Hold) — stock quarantined</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node" style="gap:6px"><div style="flex:1;display:flex;flex-direction:column;gap:5px">
+        <div class="dt-node"><div class="dt-line"></div><div class="dt-box og">PO amended (ME22N) + purchasing approves → GR posted, normal putaway</div></div>
+        <div class="dt-node"><div class="dt-line last"></div><div class="dt-box or">Rejected → return ${s.actualQty-s.qty} EA to vendor</div></div>
+      </div></div>`,
+
+    cold:`<div class="dt-node"><div class="dt-box dec active">GR posted — cold chain flag detected</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box oc active">❄ Temperature-sensitive → ambient zones blocked</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box oc active">LG05 (Cold Storage, 2–8°C) selected — temperature log recorded</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box dec active">Batch ${batch} tracked: GR → TO → CC-01 → confirmed</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box oc active">✓ CC-01 assigned — Unrestricted use (cold chain)</div></div>`,
+
+    expiry:`<div class="dt-node"><div class="dt-box dec active">GR posted — expiry date ${expiryDate(s.expiryDays)} recorded</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box dec active">Shelf life check — ${s.expiryDays} days remaining</div></div><div class="dt-conn">↓</div>
+      <div class="dt-node" style="gap:6px"><div style="flex:1;display:flex;flex-direction:column;gap:5px">
+        <div class="dt-node"><div class="dt-line"></div><div class="dt-box op active">&lt; 90 days → FEFO routing → LG08 (Near-Expiry zone)</div></div>
+        <div class="dt-node"><div class="dt-line last"></div><div class="dt-box og">≥ 90 days → normal putaway → LG01 (Zone A)</div></div>
+      </div></div><div class="dt-conn">↓</div>
+      <div class="dt-node"><div class="dt-box op active">✓ EX-01 assigned — FEFO picking enforced, picked before standard stock</div></div>`,
+  };
+
+  const notes={
+    damaged:`<div class="warn-box" style="margin-top:12px"><strong>Next steps:</strong> QA32 usage decision required. Release → reclassification TO. Rejection → return to vendor TO. Transaction: QA32 / QA11.</div>`,
+    short:`<div class="warn-box" style="margin-top:12px"><strong>Open delivery:</strong> ${s.qty-s.actualQty} EA outstanding. Purchasing to follow up with ${v.name}. Transaction: VL32N.</div>`,
+    over:`<div class="alert-box" style="margin-top:12px"><strong>Action required:</strong> Purchase Order ${v.po} must be amended (ME22N) to allow ${s.actualQty} EA. Purchasing approval required. Until approved, ${s.actualQty} EA remain quarantined in LG10. Excess ${s.actualQty-s.qty} EA may be returned to vendor.</div>`,
+    cold:`<div class="cold-box" style="margin-top:12px"><strong>Cold chain compliance:</strong> Temperature log maintained from GR through confirmation. Any excursion triggers auto QM hold. Monitor: /SCWM/MON.</div>`,
+    expiry:`<div class="purple-box" style="margin-top:12px"><strong>FEFO active:</strong> Expiry ${expiryDate(s.expiryDays)} appears on all outbound pick TOs. Stock picked before standard stock regardless of receipt date.</div>`,
+  }[sc]||'';
+
+  const bannerCls={normal:'green',damaged:'amber',short:'amber',over:'red',cold:'cold',expiry:'purple'}[sc];
+  const bannerMsg={
+    normal:`${s.actualQty} EA putaway to A-07 (Zone A / LG01). Batch ${batch} fully traced.`,
+    damaged:`${s.actualQty} EA in Quality Inspection (QI-01 / LG09). Awaiting QM decision.`,
+    short:`${s.actualQty} of ${s.qty} EA putaway. Delivery open for ${s.qty-s.actualQty} EA.`,
+    over:`GR blocked — ${s.actualQty} EA quarantined in LG10. PO amendment required.`,
+    cold:`${s.actualQty} EA in Cold Storage (CC-01 / LG05, 2–8°C). Temp log recorded.`,
+    expiry:`${s.actualQty} EA in Near-Expiry Zone (EX-01 / LG08). FEFO enforced.`,
+  }[sc];
+
+  const flowDets=[
+    `Delivery 1800042371 — ${v.name} — ${door.label} (${door.type})`,
+    `GR doc 5000112847 — ${s.actualQty} EA${sc==='damaged'?' → Damaged, QM hold':sc==='over'?' → Over-delivery, GR blocked':sc==='short'?' → Short delivery, partial GR':''}`,
+    `TO created — batch ${batch} — ${w} kg (auto from ${s.actualQty} × ${UW} kg)`,
+    {normal:'LG01 (Zone A) selected',damaged:'LG09 (QI) selected — LG01–LG04 blocked',short:'LG01 (Zone A) selected — partial qty',over:'LG10 (Hold) — all normal types blocked',cold:'LG05 (Cold Storage) — ambient bypassed',expiry:'LG08 (FEFO zone) — LG01 bypassed'}[sc],
+    {normal:'A-07 assigned — 200kg limit OK',damaged:'QI-01 assigned — QM inspection zone',short:'A-07 assigned — '+w+'kg weight',over:'OD-01 — quarantine hold zone',cold:'CC-01 — cold storage, 2–8°C',expiry:'EX-01 — near-expiry zone, FEFO'}[sc],
+    `RF confirmed — stock posted as "${stockType}" — batch ${batch} at bin`,
+  ];
+
+  const STEPLABELS=['Inbound delivery','GR posting','Transfer order','Storage search','Bin determined','Confirmed'];
+  const STEPTX=['VL31N / /SCWM/PRDI','MIGO / /SCWM/GR','/SCWM/TO_CREATE / LT0A','SPRO → Putaway Strategy','/SCWM/BIN / LX04','/SCWM/TO_CONF / LT1A'];
+  const numCls={normal:'',damaged:'w',short:'w',over:'w',cold:'c',expiry:'w'};
+
+  let html=`
+    <div class="banner ${bannerCls}"><h2>${s.icon} ${s.label} — Complete</h2><p>${bannerMsg}</p></div>
+    <div class="sec-lbl">Summary</div>
+    <div class="sum-grid">${items.map(it=>`<div class="sum-item"><div class="sum-lbl">${it.l}</div><div class="sum-val">${it.v}</div></div>`).join('')}</div>
+    <div class="dtree">
+      <div class="dtree-title">EWM decision tree — how the system routed this scenario</div>
+      ${trees[sc]}
+    </div>
+    <div class="sec-lbl" style="margin-top:16px">Full process flow</div>
+    <div class="flow">${STEPLABELS.map((lbl,i)=>`
+      <div class="flow-item">
+        <div class="flow-num ${numCls[sc]}">${i+1}</div>
+        <div>
+          <div class="flow-name">${lbl}</div>
+          <div class="flow-det">${flowDets[i]}</div>
+          <div class="flow-tx">${STEPTX[i]}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+    ${notes}
+    <div class="info-box" style="margin-top:14px">
+      <strong>What V4 adds:</strong> Full date+time arrival scheduling for Yard Management (YM) door assignment.
+      Door classification — inbound, outbound, flexible, cross-dock — with occupancy status and dock conflict detection.
+      Yard waiting zone pre-assignment when conflict risk detected.
+      Over-delivery scenario with PO amendment flow (ME22N).
+      Field validation — vendor from dropdown, system-generated delivery number and material, quantity/condition cross-check.
+      All six scenarios: Normal GR, Damaged (QM hold), Short delivery, Over-delivery, Cold chain (LG05), Near-expiry (FEFO / LG08).
+    </div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn btn-p" onclick="restart()">Try another scenario →</button>
+    </div>`;
+
+  document.getElementById('card').innerHTML=html;
+  document.querySelectorAll('.prog-dot').forEach(d=>d.classList.add('done'));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function restart(){
+  step=0; selectedDoor=null;
+  Object.keys(saved).forEach(k=>delete saved[k]);
+  buildProg(); renderStep();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderSC(); buildProg(); renderStep();
+</script>
+</body>
+</html>
